@@ -1,0 +1,15 @@
+# Template file for 'pocket-reform-base'
+pkgname=pocket-reform-base
+version=0.1
+revision=1
+archs="aarch64*"
+build_style=meta
+depends="pocket-reform-kernel dracut"
+short_desc="Void Linux MNT Pocket Reform imx8mp platform package"
+maintainer="Joseph Albanese <joe-albanese@protonmail.com>"
+license="Public Domain"
+homepage="https://www.voidlinux.org"
+
+do_install() {
+vinstall ${FILESDIR}/dracut-pocket-reform.conf 0755 usr/lib/dracut.conf.d 20-pocket-reform.conf
+}
