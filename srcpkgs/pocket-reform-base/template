@@ -11,5 +11,5 @@ license="Public Domain"
 homepage="https://www.voidlinux.org"
 
 do_install() {
-vinstall ${FILESDIR}/dracut-pocket-reform.conf 0755 usr/lib/dracut.conf.d 20-pocket-reform.conf
+vinstall ${FILESDIR}/dracut-pocket-reform.conf 0755 usr/lib/dracut/dracut.conf.d 20-pocket-reform.conf
 }
