@@ -1,0 +1,10 @@
+# Template file for 'qcacld-firmware'
+pkgname=qcacld-firmware
+version=1.0.0
+revision=1
+archs="aarch64"
+short_desc="Firmware files for the MNT Pocket Reform with imx8mp wifi"
+maintainer="Joe Albanese <joe@joe-albanese.com>"
+build_type="gnu_make
+
+
