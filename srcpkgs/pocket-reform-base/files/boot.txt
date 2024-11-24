@@ -1,0 +1,104 @@
+# sh-kernel: bootscr.uboot-generic
+#
+
+# Bootscript using the new unified bootcmd handling
+#
+# Expects to be called with the following environment variables set:
+#
+#  devtype              e.g. mmc/scsi etc
+#  devnum               The device number of the given type
+#  bootpart             The partition containing the boot files
+#  distro_bootpart      The partition containing the boot files
+#                       (introduced in u-boot mainline 2016.01)
+#  prefix               Prefix within the boot partiion to the boot files
+#  kernel_addr_r        Address to load the kernel to
+#  fdt_addr_r           Address to load the FDT to
+#  ramdisk_addr_r       Address to load the initrd to.
+#
+
+## Workaround lack of baudrate included with console on various iMX
+# systems (e.g. wandboard, cubox-i, hummingboard)
+if test "${console}" = "ttymxc0" && test -n "${baudrate}"; then
+  setenv console "${console},${baudrate}"
+fi
+
+if test -n "${console}"; then
+  setenv bootargs "${bootargs} console=${console}"
+fi
+# The uboot must support the booti and generic filesystem load commands.
+
+if test -n "${console}"; then
+  setenv bootargs "${bootargs} console=${console}"
+fi
+
+# console=tty1 needs to go at the end of the kernel cmdline because the luks
+# passphrase prompt will show up on the last console which must not be the
+# serial terminal but the tty displayed to the screen
+setenv bootargs "${bootargs} console=tty1"
+########## END /usr/share/flash-kernel/ubootenv.d/00reform2_ubootenv ##########
+
+if test -z "${fk_kvers}"; then
+   setenv fk_kvers '6.11.5_1'
+fi
+
+# These two blocks should be the same apart from the use of
+# ${fk_kvers} in the first, the syntax supported by u-boot does not
+# lend itself to removing this duplication.
+
+if test -z "${distro_bootpart}"; then
+  setenv partition ${bootpart}
+else
+  setenv partition ${distro_bootpart}
+fi
+
+######### BEGIN /usr/share/flash-kernel/preboot.d/00reform2_preboot ###########
+# We need to set ${fdtfile} in uboot to select a default dtb for boot mediums
+# that are supposed to boot on multiple devices like the Debian installer.
+#
+# But if ${fdtfile} is set, then bootscr.uboot-generic will use that instead of
+# the dtb-${fk_kvers} symlink maintained by flash-kernel which will point to
+# either the normal or the hdmi dtb for the reform.
+#
+# This preboot script overwrites ${fdtpath} such that even when ${fdtfile} is
+# set to a reasonable default, u-boot will still use dtb-${fk_kvers} if it
+# exists -- which it does after running flash-kernel.
+
+if test -e ${devtype} ${devnum}:${partition} ${prefix}dtb-${fk_kvers}; then
+  setenv fdtpath dtb-${fk_kvers}
+fi
+########## END /usr/share/flash-kernel/preboot.d/00reform2_preboot ############
+
+if test -z "${fk_image_locations}"; then
+  setenv fk_image_locations ${prefix}
+fi
+
+for pathprefix in ${fk_image_locations}
+do
+  if test -e ${devtype} ${devnum}:${partition} ${pathprefix}vmlinux-${fk_kvers}
+  then
+    load ${devtype} ${devnum}:${partition} ${kernel_addr_r} ${pathprefix}vmlinux-${fk_kvers} \
+    && load ${devtype} ${devnum}:${partition} ${fdt_addr_r} ${pathprefix}/dtbs/dtbs-${fk_kvers}/freescale/imx8mp-mnt-pocket-reform.dtb \
+    && load ${devtype} ${devnum}:${partition} ${ramdisk_addr_r} ${pathprefix}initramfs-${fk_kvers}.img \
+    && echo "ENTERING_THE_VOID_ON ${fk_kvers} from ${devtype} ${devnum}:${partition}..." \
+    && booti ${kernel_addr_r} ${ramdisk_addr_r}:${filesize} ${fdt_addr_r}
+  fi
+done
+
+for pathprefix in ${fk_image_locations}
+do
+  if test -e ${devtype} ${devnum}:${partition} ${pathprefix}vmlinux
+  then
+    load ${devtype} ${devnum}:${partition} ${kernel_addr_r} ${pathprefix}vmlinux \
+    && load ${devtype} ${devnum}:${partition} ${fdt_addr_r} ${pathprefix}dtb \
+    && load ${devtype} ${devnum}:${partition} ${ramdisk_addr_r} ${pathprefix}initrd.img \
+    && echo "Entering The Void on ${devtype} ${devnum}:${partition}..." \
+    && booti ${kernel_addr_r} ${ramdisk_addr_r}:${filesize} ${fdt_addr_r}
+  fi
+
+
+# setenv bootpart "1"
+# setenv prefix "/"
+# setenv kernel_addr_r "0x40480000"
+# setenv fdt_addr_r "0x50000000"
+# setenv ramdisk_addr_r "0x51000000"
+

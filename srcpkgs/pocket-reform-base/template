@@ -4,6 +4,7 @@ version=0.1
 revision=1
 archs="aarch64*"
 build_style=meta
+makedepends="uboot-mkimage"
 depends="pocket-reform-kernel dracut"
 short_desc="Void Linux MNT Pocket Reform imx8mp platform package"
 maintainer="Joseph Albanese <joe-albanese@protonmail.com>"
@@ -11,7 +12,8 @@ license="Public Domain"
 homepage="https://www.voidlinux.org"
 
 do_install() {
-vinstall ${FILESDIR}/dracut-pocket-reform.conf 0755 usr/lib/dracut/dracut.conf.d 20-pocket-reform.conf
+    vinstall ${FILESDIR}/dracut-pocket-reform.conf 0755 usr/lib/dracut/dracut.conf.d 20-pocket-reform.conf
+    vinstall ${FILESDIR}/modprobe-pocket-reform.conf 0755 usr/lib/modprobe.d pocket-reform.conf
 
-mkimage -A arm64 -O linux -T script -C none -a 0x0 -e 0x0 -n "boot script" -d boot.txt boot.scr
+    mkimage -A arm64 -O linux -T script -C none -a 0x0 -e 0x0 -n "boot script" -d ${FILESDIR}/boot.txt /boot/boot.scr
 }
