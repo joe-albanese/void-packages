@@ -1,0 +1,14 @@
+# Template file for 'python3-jedi'
+pkgname=python3-ttkthemes
+version=3.2.2
+revision=1
+build_style=python3-module
+hostmakedepends="python3-setuptools python3-tkinter"
+depends="python3-tkinter"
+short_desc="A group of themes for the ttk extensions of Tkinter with a Tkinter.Tk wrapper"
+maintainer="Joe Albanese <joe-albanese@protonmail.com>"
+license="GPLv3"
+homepage="https://github.com/RedFantom/ttkthemes"
+distfiles="${PYPI_SITE}/t/ttkthemes/ttkthemes-${version}.tar.gz"
+checksum=01daed001f2ff0e4f32832a0d9ea48176c0c505203b030756bdde3bd1bcb21d2
+
