@@ -1,0 +1,27 @@
+# Template file for 'ezurio-qcacld-2.0-dkms'
+pkgname=ezurio-qcacld-2.0-dkms
+version=1.0.0
+revision=1
+archs="aarch64 aarch64-musl"
+short_desc="Firmware files for the MNT Pocket Reform with imx8mp wifi"
+maintainer="Joe Albanese <joe@joe-albanese.com>"
+build_type="dkms"
+depends="dkms zstd gcc make"
+dkms_modules="ezurio-qcacld-2.0 ${version}"
+#make_use_env=yes
+triggers="dkms initramfs-regenerate"
+distfiles="http://deb.debian.org/debian/pool/main/e/ezurio-qcacld-2.0-dkms/ezurio-qcacld-2.0-dkms_0.0~git20240408.aa96a9f+dfsg.orig.tar.xz"
+checksum=dd0f4705e56248424ceedeccf0ddafeb8592993470ebff1f7397347a2dbe68a9
+homepage="https://packages.debian.org/sid/ezurio-qcacld-2.0-dkms"
+license="nonfree"
+
+do_install() {
+	vmkdir usr/src/ezurio-qcacld-2.0-${version}
+	vcopy CORE usr/src/ezurio-qcacld-2.0-${version}
+	vcopy Kbuild usr/src/ezurio-qcacld-2.0-${version}
+	vcopy Kconfig usr/src/ezurio-qcacld-2.0-${version}
+	vcopy Makefile usr/src/ezurio-qcacld-2.0-${version}
+	vcopy firmware_bin usr/src/ezurio-qcacld-2.0-${version}
+	vcopy wcnss usr/src/ezurio-qcacld-2.0-${version}
+	vcopy ${FILESDIR}/dkms.conf usr/src/ezurio-qcacld-2.0-${version}
+}

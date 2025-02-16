@@ -1,0 +1,39 @@
+From cb423f493a1de622e8ce9b3499c34d2d7ef9e02a Mon Sep 17 00:00:00 2001
+From: "Lukas F. Hartmann" <lukas@mntre.com>
+Date: Mon, 7 Oct 2024 12:34:14 +0200
+Subject: [PATCH] tsf: struct name change for kernel 6.11
+
+---
+ CORE/HDD/inc/wlan_hdd_tsf.h | 2 +-
+ CORE/HDD/src/wlan_hdd_tsf.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/CORE/HDD/inc/wlan_hdd_tsf.h b/CORE/HDD/inc/wlan_hdd_tsf.h
+index 7ffc0fdac..94f76233f 100644
+--- a/CORE/HDD/inc/wlan_hdd_tsf.h
++++ b/CORE/HDD/inc/wlan_hdd_tsf.h
+@@ -289,7 +289,7 @@ hdd_tsf_record_sk_for_skb(hdd_context_t *hdd_ctx, adf_nbuf_t nbuf)
+  *
+  * Return: Describe the execute result of this routine
+  */
+-int wlan_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info);
++int wlan_get_ts_info(struct net_device *dev, struct kernel_ethtool_ts_info *info);
+ #endif
+ 
+ #endif
+diff --git a/CORE/HDD/src/wlan_hdd_tsf.c b/CORE/HDD/src/wlan_hdd_tsf.c
+index c906df263..0378b9a89 100644
+--- a/CORE/HDD/src/wlan_hdd_tsf.c
++++ b/CORE/HDD/src/wlan_hdd_tsf.c
+@@ -1495,7 +1495,7 @@ int hdd_indicate_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len)
+ }
+ 
+ #ifdef WLAN_FEATURE_TSF_PTP
+-int wlan_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info)
++int wlan_get_ts_info(struct net_device *dev, struct kernel_ethtool_ts_info *info)
+ 
+ {
+ 	hdd_adapter_t *adapter = netdev_priv(dev);
+-- 
+GitLab
+
