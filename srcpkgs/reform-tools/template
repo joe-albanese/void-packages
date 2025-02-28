@@ -8,8 +8,8 @@ maintainer="Joe Albanese <joe@joe-albanese.com>"
 #build_type="gnu-makefile"
 depends="gcc make"
 #make_use_env=yes
-distfiles="https://source.mnt.re/reform/reform-tools/-/archive/main/reform-tools-main.tar.gz"
-checksum=8fbbe075b415bd1c34c311528c2e7d91f9024ffc4a80679e23cf37955df4ae04
+distfiles="https://source.mnt.re/reform/reform-tools/-/archive/80e169578b7b15478b43406f607bc381215fc5a9/reform-tools-80e169578b7b15478b43406f607bc381215fc5a9.tar.gz"
+checksum=9ce3cf806ba25fa86bca263d7eeb0919350e3a5860fec9b261a32b4e785eb265
 homepage="https://source.mnt.re/reform/reform-tools"
 license="AGPL-3.0-or-later"
 
