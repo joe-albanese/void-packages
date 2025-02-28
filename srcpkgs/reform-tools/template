@@ -1,0 +1,20 @@
+# Template file for 'reform-tools'
+pkgname=reform-tools
+version=1.0.0
+revision=1
+archs="aarch64 aarch64-musl"
+short_desc="Tools for using MNT Reform hardware"
+maintainer="Joe Albanese <joe@joe-albanese.com>"
+#build_type="gnu-makefile"
+depends="gcc make"
+#make_use_env=yes
+distfiles="https://source.mnt.re/reform/reform-tools/-/archive/main/reform-tools-main.tar.gz"
+checksum=8fbbe075b415bd1c34c311528c2e7d91f9024ffc4a80679e23cf37955df4ae04
+homepage="https://source.mnt.re/reform/reform-tools"
+license="AGPL-3.0-or-later"
+
+do_install() {
+
+	vlicense LICENSE.txt
+	vsv reform-hw-setup
+}
