@@ -12,10 +12,11 @@ triggers="dkms initramfs-regenerate"
 distfiles="https://source.mnt.re/reform/reform-tools/-/archive/1.68/reform-tools-1.68.tar.gz"
 checksum=84348708c8c41e655b41df9c6a4d5be0528638b996063c4089490738de5d5aac
 homepage="https://source.mnt.re/reform/reform-tools"
-license="mixed"
+license="AGPL-3.0-or-later"
 
 do_install() {
 	vmkdir usr/src/reform2_lpc-${version}
 	vcopy lpc/* usr/src/reform2_lpc-${version}
 	vcopy ${FILESDIR}/dkms.conf usr/src/reform2_lpc-${version}
+	vlicense LICENSE.txt
 }
