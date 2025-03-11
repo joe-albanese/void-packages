@@ -1,20 +1,19 @@
 # Template file for 'reform-tools'
 pkgname=reform-tools
-version=1.68+e378e651
+version=1.69
 revision=1
-archs="aarch64 aarch64-musl"
+build_style=gnu-makefile
+archs="aarch64*"
+depends="python3-libusb1 python3-psutil"
+hostmakedepends="python3-libusb1 python3-psutil help2man make"
 short_desc="Tools for using MNT Reform hardware"
 maintainer="Joe Albanese <joe@joe-albanese.com>"
-#build_type="gnu-makefile"
-depends="gcc make"
-#make_use_env=yes
-distfiles="https://source.mnt.re/reform/reform-tools/-/archive/e378e651190e7ae61914f36598406c16d4d81213/reform-tools-e378e651190e7ae61914f36598406c16d4d81213.tar.gz"
-checksum=452a7ddbdcf95debbf9a816936d40beffad1640476711987132f30fd4d3e146b
-homepage="https://source.mnt.re/reform/reform-tools"
 license="AGPL-3.0-or-later"
+homepage="https://source.mnt.re/reform/reform-tools"
+distfiles="https://source.mnt.re/reform/reform-tools/-/archive/1.69/reform-tools-1.69.tar.gz"
+checksum=80630150e7a20191d4d1457b93a057b3b454d04dfb37b25af674c56143302e3d
 
-do_install() {
-
+post_install() {
 	vlicense LICENSE.txt
 	vsv reform-hw-setup
 }
