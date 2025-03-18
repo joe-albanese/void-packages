@@ -1,22 +1,24 @@
-#Template file for 'reform2-lpc-dkms'
+# Template file for 'reform2-lpc-dkms'
 pkgname=reform2-lpc-dkms
-version=1.68+e378e651
+version=1.69
 revision=1
 archs="aarch64 aarch64-musl"
-short_desc="lpc driver for MNT Reform devices (including the MNT Pocket Reform)"
-maintainer="Joe Albanese <joe@joe-albanese.com>"
-build_type="dkms"
-dkms_modules="reform2_lpc ${version}"
 depends="dkms zstd clang make"
-triggers="dkms initramfs-regenerate"
-distfiles="https://source.mnt.re/reform/reform-tools/-/archive/e378e651190e7ae61914f36598406c16d4d81213/reform-tools-e378e651190e7ae61914f36598406c16d4d81213.tar.gz"
-checksum=452a7ddbdcf95debbf9a816936d40beffad1640476711987132f30fd4d3e146b
-homepage="https://source.mnt.re/reform/reform-tools"
+short_desc="LPC driver for MNT Reform devices (including the MNT Pocket Reform)"
+maintainer="Joe Albanese <joe@joe-albanese.com>"
 license="AGPL-3.0-or-later"
+homepage="https://source.mnt.re/reform/reform-tools"
+distfiles="https://source.mnt.re/reform/reform-tools/-/archive/${version}/reform-tools-${version}.tar.gz"
+checksum=80630150e7a20191d4d1457b93a057b3b454d04dfb37b25af674c56143302e3d
+triggers="dkms initramfs-regenerate"
+dkms_modules="reform2_lpc ${version}"
 
 do_install() {
 	vmkdir usr/src/reform2_lpc-${version}
 	vcopy lpc/* usr/src/reform2_lpc-${version}
 	vcopy ${FILESDIR}/dkms.conf usr/src/reform2_lpc-${version}
+}
+
+post_install() {
 	vlicense LICENSE.txt
 }
