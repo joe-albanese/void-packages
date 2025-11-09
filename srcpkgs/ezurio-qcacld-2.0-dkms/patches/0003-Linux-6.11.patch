@@ -1,0 +1,110 @@
+From: "Lukas F. Hartmann" <lukas@mntre.com>
+Date: Mon, 7 Oct 2024 12:34:14 +0200
+Subject: Linux 6.11
+
+tsf: struct name change
+
+ATH_SYSCTL_DECL change
+---
+ CORE/HDD/inc/wlan_hdd_tsf.h      |  4 ++++
+ CORE/HDD/src/wlan_hdd_tsf.c      |  4 ++++
+ CORE/SERVICES/COMMON/osdep_adf.h |  6 ++++++
+ CORE/UTILS/PKTLOG/linux_ac.c     | 14 ++++++++++++++
+ 4 files changed, 28 insertions(+)
+
+diff --git a/CORE/HDD/inc/wlan_hdd_tsf.h b/CORE/HDD/inc/wlan_hdd_tsf.h
+index 7ffc0fd..a0693e2 100644
+--- a/CORE/HDD/inc/wlan_hdd_tsf.h
++++ b/CORE/HDD/inc/wlan_hdd_tsf.h
+@@ -289,7 +289,11 @@ hdd_tsf_record_sk_for_skb(hdd_context_t *hdd_ctx, adf_nbuf_t nbuf)
+  *
+  * Return: Describe the execute result of this routine
+  */
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0))
+ int wlan_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info);
++#else
++int wlan_get_ts_info(struct net_device *dev, struct kernel_ethtool_ts_info *info);
++#endif
+ #endif
+ 
+ #endif
+diff --git a/CORE/HDD/src/wlan_hdd_tsf.c b/CORE/HDD/src/wlan_hdd_tsf.c
+index c906df2..f82b2df 100644
+--- a/CORE/HDD/src/wlan_hdd_tsf.c
++++ b/CORE/HDD/src/wlan_hdd_tsf.c
+@@ -1495,7 +1495,11 @@ int hdd_indicate_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len)
+ }
+ 
+ #ifdef WLAN_FEATURE_TSF_PTP
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0))
+ int wlan_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info)
++#else
++int wlan_get_ts_info(struct net_device *dev, struct kernel_ethtool_ts_info *info)
++#endif
+ 
+ {
+ 	hdd_adapter_t *adapter = netdev_priv(dev);
+diff --git a/CORE/SERVICES/COMMON/osdep_adf.h b/CORE/SERVICES/COMMON/osdep_adf.h
+index 7a19bea..f70fe17 100644
+--- a/CORE/SERVICES/COMMON/osdep_adf.h
++++ b/CORE/SERVICES/COMMON/osdep_adf.h
+@@ -161,9 +161,15 @@ static inline void spin_unlock_dpc(spinlock_t *lock)
+ typedef unsigned long TQUEUE_ARG;
+ #define mark_bh(a)
+ 
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0))
+ #define ATH_SYSCTL_DECL(f, ctl, write, filp, buffer, lenp, ppos) \
+     f(struct ctl_table *ctl, int write, void *buffer,                   \
+         size_t *lenp, loff_t *ppos)
++#else
++#define ATH_SYSCTL_DECL(f, ctl, write, filp, buffer, lenp, ppos) \
++    f(const struct ctl_table *ctl, int write, void *buffer,                   \
++        size_t *lenp, loff_t *ppos)
++#endif
+ #define ATH_SYSCTL_PROC_DOINTVEC(ctl, write, filp, buffer, lenp, ppos) \
+     proc_dointvec(ctl, write, buffer, lenp, ppos)
+ #define ATH_SYSCTL_PROC_DOSTRING(ctl, write, filp, buffer, lenp, ppos) \
+diff --git a/CORE/UTILS/PKTLOG/linux_ac.c b/CORE/UTILS/PKTLOG/linux_ac.c
+index e8f55db..4d517b5 100644
+--- a/CORE/UTILS/PKTLOG/linux_ac.c
++++ b/CORE/UTILS/PKTLOG/linux_ac.c
+@@ -229,12 +229,19 @@ pktlog_cleanup(struct ath_pktlog_info *pl_info)
+ 
+ /* sysctl procfs handler to enable pktlog */
+ static int
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0))
+ ATH_SYSCTL_DECL(ath_sysctl_pktlog_enable, ctl, write, filp, buffer, lenp,
++#else
++ATH_SYSCTL_DECL(ath_sysctl_pktlog_enable, ctl_ro, write, filp, buffer, lenp,
++#endif
+ 		ppos)
+ {
+ 	int ret, enable;
+ 	ol_ath_generic_softc_handle scn;
+ 	struct ol_pktlog_dev_t *pl_dev;
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,11,0))
++	struct ctl_table* ctl = (struct ctl_table*)ctl_ro;
++#endif
+ 
+ 	mutex_lock(&proc_mutex);
+ 	scn = (ol_ath_generic_softc_handle) ctl->extra1;
+@@ -290,12 +297,19 @@ static int get_pktlog_bufsize(struct ol_pktlog_dev_t *pl_dev)
+ 
+ /* sysctl procfs handler to set/get pktlog size */
+ static int
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0))
+ ATH_SYSCTL_DECL(ath_sysctl_pktlog_size, ctl, write, filp, buffer, lenp,
++#else
++ATH_SYSCTL_DECL(ath_sysctl_pktlog_size, ctl_ro, write, filp, buffer, lenp,
++#endif
+ 		ppos)
+ {
+ 	int ret, size;
+ 	ol_ath_generic_softc_handle scn;
+ 	struct ol_pktlog_dev_t *pl_dev;
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,11,0))
++	struct ctl_table* ctl = (struct ctl_table*)ctl_ro;
++#endif
+ 
+ 	mutex_lock(&proc_mutex);
+ 	scn = (ol_ath_generic_softc_handle) ctl->extra1;

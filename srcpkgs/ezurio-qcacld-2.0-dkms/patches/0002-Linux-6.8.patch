@@ -1,8 +1,8 @@
-From 20496c23b602fbc33ff16b9e9496f06da2d3471b Mon Sep 17 00:00:00 2001
 From: "Lukas F. Hartmann" <lukas@mntre.com>
 Date: Fri, 17 May 2024 12:52:10 +0200
-Subject: [PATCH] replace all strlcpy with strscpy for 6.8 compliance
+Subject: Linux 6.8
 
+replace all strlcpy with strscpy
 ---
  CORE/HDD/src/wlan_hdd_assoc.c                  |  6 +++---
  CORE/HDD/src/wlan_hdd_cfg.c                    |  4 ++--
@@ -20,7 +20,7 @@ Subject: [PATCH] replace all strlcpy with strscpy for 6.8 compliance
  13 files changed, 33 insertions(+), 35 deletions(-)
 
 diff --git a/CORE/HDD/src/wlan_hdd_assoc.c b/CORE/HDD/src/wlan_hdd_assoc.c
-index b1cbf9539..564393de1 100644
+index b1cbf95..564393d 100644
 --- a/CORE/HDD/src/wlan_hdd_assoc.c
 +++ b/CORE/HDD/src/wlan_hdd_assoc.c
 @@ -1122,7 +1122,7 @@ void hdd_SendFTEvent(hdd_adapter_t *pAdapter)
@@ -51,7 +51,7 @@ index b1cbf9539..564393de1 100644
  
      totalIeLen = pCsrRoamInfo->nBeaconLength - BEACON_FRAME_IES_OFFSET;
 diff --git a/CORE/HDD/src/wlan_hdd_cfg.c b/CORE/HDD/src/wlan_hdd_cfg.c
-index 168efec84..7a0cfdb8d 100644
+index 168efec..7a0cfdb 100644
 --- a/CORE/HDD/src/wlan_hdd_cfg.c
 +++ b/CORE/HDD/src/wlan_hdd_cfg.c
 @@ -7484,7 +7484,7 @@ VOS_STATUS hdd_string_to_string_array(char *data, uint8_t *datalist,
@@ -73,7 +73,7 @@ index 168efec84..7a0cfdb8d 100644
          num++;
      }
 diff --git a/CORE/HDD/src/wlan_hdd_cfg80211.c b/CORE/HDD/src/wlan_hdd_cfg80211.c
-index 7ff80f4e8..0a0e5a1ee 100644
+index 7ff80f4..0a0e5a1 100644
 --- a/CORE/HDD/src/wlan_hdd_cfg80211.c
 +++ b/CORE/HDD/src/wlan_hdd_cfg80211.c
 @@ -8261,7 +8261,7 @@ __wlan_hdd_cfg80211_get_wifi_info(struct wiphy *wiphy,
@@ -86,7 +86,7 @@ index 7ff80f4e8..0a0e5a1ee 100644
  		skb_len += strlen(driver_version) + 1;
  		count++;
 diff --git a/CORE/HDD/src/wlan_hdd_dp_utils.c b/CORE/HDD/src/wlan_hdd_dp_utils.c
-index 0b880d11d..aa613b2aa 100644
+index 0b880d1..aa613b2 100644
 --- a/CORE/HDD/src/wlan_hdd_dp_utils.c
 +++ b/CORE/HDD/src/wlan_hdd_dp_utils.c
 @@ -271,10 +271,10 @@ void hdd_dp_util_send_rps_ind(hdd_adapter_t *adapter)
@@ -108,10 +108,10 @@ index 0b880d11d..aa613b2aa 100644
  #endif /* QCA_FEATURE_RPS */
 -
 diff --git a/CORE/HDD/src/wlan_hdd_hostapd.c b/CORE/HDD/src/wlan_hdd_hostapd.c
-index 0f65e4163..2ed02918c 100644
+index d0f8071..13761e2 100644
 --- a/CORE/HDD/src/wlan_hdd_hostapd.c
 +++ b/CORE/HDD/src/wlan_hdd_hostapd.c
-@@ -8997,7 +8997,7 @@ hdd_adapter_t* hdd_wlan_create_ap_dev(hdd_context_t *pHddCtx,
+@@ -9001,7 +9001,7 @@ hdd_adapter_t* hdd_wlan_create_ap_dev(hdd_context_t *pHddCtx,
                                        (int)vos_get_concurrency_mode());
  
          //Init the net_device structure
@@ -121,7 +121,7 @@ index 0f65e4163..2ed02918c 100644
          hdd_set_ap_ops( pHostapdAdapter->dev );
  
 diff --git a/CORE/HDD/src/wlan_hdd_ipa.c b/CORE/HDD/src/wlan_hdd_ipa.c
-index 4e3daec67..16e55f475 100644
+index 4e3daec..16e55f4 100644
 --- a/CORE/HDD/src/wlan_hdd_ipa.c
 +++ b/CORE/HDD/src/wlan_hdd_ipa.c
 @@ -2221,7 +2221,7 @@ static int hdd_ipa_uc_send_evt(hdd_adapter_t *adapter,
@@ -179,7 +179,7 @@ index 4e3daec67..16e55f475 100644
  
  	HDD_IPA_LOG(VOS_TRACE_LEVEL_INFO, "%s: Evt: %d",
 diff --git a/CORE/HDD/src/wlan_hdd_main.c b/CORE/HDD/src/wlan_hdd_main.c
-index 1012aa69b..fcb714a9f 100644
+index 6f3b20c..a80907b 100644
 --- a/CORE/HDD/src/wlan_hdd_main.c
 +++ b/CORE/HDD/src/wlan_hdd_main.c
 @@ -11171,7 +11171,7 @@ hdd_alloc_p2p_device_adapter(hdd_context_t *pHddCtx, tSirMacAddr macAddr,
@@ -240,7 +240,7 @@ index 1012aa69b..fcb714a9f 100644
                (fw_version & 0xf0000000) >> 28,
                (fw_version & 0xf000000) >> 24,
 diff --git a/CORE/HDD/src/wlan_hdd_oemdata.c b/CORE/HDD/src/wlan_hdd_oemdata.c
-index 2e6072fab..8492a96e7 100644
+index 2e6072f..8492a96 100644
 --- a/CORE/HDD/src/wlan_hdd_oemdata.c
 +++ b/CORE/HDD/src/wlan_hdd_oemdata.c
 @@ -81,7 +81,7 @@ static int populate_oem_data_cap(hdd_adapter_t *adapter,
@@ -253,7 +253,7 @@ index 2e6072fab..8492a96e7 100644
  	data_cap->oem_target_type = hdd_ctx->target_type;
  	data_cap->oem_fw_version = hdd_ctx->target_fw_version;
 diff --git a/CORE/HDD/src/wlan_hdd_wext.c b/CORE/HDD/src/wlan_hdd_wext.c
-index 3bb102e29..c0267daf6 100644
+index 3bb102e..c0267da 100644
 --- a/CORE/HDD/src/wlan_hdd_wext.c
 +++ b/CORE/HDD/src/wlan_hdd_wext.c
 @@ -2048,7 +2048,7 @@ static int __iw_get_name(struct net_device *dev,
@@ -275,7 +275,7 @@ index 3bb102e29..c0267daf6 100644
  }
  
 diff --git a/CORE/SERVICES/COMMON/adf/adf_nbuf.c b/CORE/SERVICES/COMMON/adf/adf_nbuf.c
-index 24899b60f..05313d906 100644
+index 24899b6..05313d9 100644
 --- a/CORE/SERVICES/COMMON/adf/adf_nbuf.c
 +++ b/CORE/SERVICES/COMMON/adf/adf_nbuf.c
 @@ -444,7 +444,7 @@ adf_nbuf_history_add(adf_nbuf_t nbuf, const char *file, uint32_t line,
@@ -302,7 +302,7 @@ index 24899b60f..05313d906 100644
  }
 -
 diff --git a/CORE/SYS/legacy/src/platform/src/VossWrapper.c b/CORE/SYS/legacy/src/platform/src/VossWrapper.c
-index 785266780..fe34e35e5 100644
+index 7852667..fe34e35 100644
 --- a/CORE/SYS/legacy/src/platform/src/VossWrapper.c
 +++ b/CORE/SYS/legacy/src/platform/src/VossWrapper.c
 @@ -344,7 +344,7 @@ v_UINT_t tx_timer_create_intern_debug( v_PVOID_t pMacGlobal, TX_TIMER *timer_ptr
@@ -324,7 +324,7 @@ index 785266780..fe34e35e5 100644
  
      status = vos_timer_init( &timer_ptr->vosTimer, VOS_TIMER_TYPE_SW,
 diff --git a/CORE/VOSS/src/vos_diag.c b/CORE/VOSS/src/vos_diag.c
-index 74d3a6e0b..a095fa4de 100644
+index 74d3a6e..a095fa4 100644
 --- a/CORE/VOSS/src/vos_diag.c
 +++ b/CORE/VOSS/src/vos_diag.c
 @@ -216,7 +216,7 @@ void vos_log_wlock_diag(uint32_t reason, const char *wake_lock_name,
@@ -337,7 +337,7 @@ index 74d3a6e0b..a095fa4de 100644
  		wlan_diag_event.name_len+1);
  
 diff --git a/CORE/VOSS/src/vos_packet.c b/CORE/VOSS/src/vos_packet.c
-index f20e40420..bc4d6183b 100644
+index f20e404..bc4d618 100644
 --- a/CORE/VOSS/src/vos_packet.c
 +++ b/CORE/VOSS/src/vos_packet.c
 @@ -350,7 +350,7 @@ void vos_pkt_trace_buf_update
@@ -349,6 +349,3 @@ index f20e40420..bc4d6183b 100644
            sizeof(trace_buffer[slot].event_string));
  
     return;
--- 
-GitLab
-

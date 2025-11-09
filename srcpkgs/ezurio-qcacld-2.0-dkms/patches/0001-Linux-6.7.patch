@@ -1,7 +1,46 @@
-Description: support for Linux 6.7+
-Author: Lukas F. Hartmann <lukas@mntre.com>
-Forwarded: not-needed
+From: "Lukas F. Hartmann" <lukas@mntre.com>
+Date: Wed, 30 Apr 2025 06:11:48 +0200
+Subject: Linux 6.7
 
+Forwarded: not-needed
+---
+ CORE/CLD_TXRX/TXRX/ol_txrx_internal.h              |   2 +-
+ CORE/EPPING/src/epping_rx.c                        |  20 +++-
+ CORE/EPPING/src/epping_txrx.c                      |   7 +-
+ CORE/HDD/src/wlan_hdd_assoc.c                      |   4 +-
+ CORE/HDD/src/wlan_hdd_cfg80211.c                   | 110 ++++++---------------
+ CORE/HDD/src/wlan_hdd_hostapd.c                    |  15 +--
+ CORE/HDD/src/wlan_hdd_main.c                       |  51 +++-------
+ CORE/HDD/src/wlan_hdd_memdump.c                    |   2 +-
+ CORE/HDD/src/wlan_hdd_softap_tx_rx.c               |   6 +-
+ CORE/HDD/src/wlan_hdd_tx_rx.c                      |  19 +++-
+ CORE/MAC/src/include/parserApi.h                   |   2 +-
+ CORE/MAC/src/include/utilsApi.h                    |   2 +-
+ CORE/SERVICES/BMI/bmi.c                            |  32 ------
+ CORE/SERVICES/COMMON/osapi_linux.h                 |  17 ----
+ CORE/SERVICES/HIF/PCIe/copy_engine.c               |  24 -----
+ CORE/SERVICES/HIF/PCIe/hif_pci.c                   |  45 ---------
+ CORE/SERVICES/HIF/PCIe/if_pci.c                    |  32 ------
+ CORE/SERVICES/HIF/ath_procfs.c                     |   6 +-
+ CORE/SERVICES/HIF/sdio/hif_sdio_recv.c             |   3 +-
+ CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c |   4 +-
+ CORE/SVC/src/logging/wlan_logging_sock_svc.c       |   2 +-
+ CORE/SYS/legacy/src/system/inc/sysDebug.h          |   2 +-
+ CORE/SYS/legacy/src/utils/inc/utilsParser.h        |   2 +-
+ CORE/SYS/legacy/src/utils/src/dot11f.c             |   2 +-
+ CORE/SYS/legacy/src/utils/src/logApi.c             |   2 +-
+ CORE/UTILS/PKTLOG/linux_ac.c                       |  14 ++-
+ CORE/VOSS/inc/vos_trace.h                          |   2 +-
+ CORE/VOSS/src/vos_nvitem.c                         |   4 +-
+ CORE/VOSS/src/vos_sched.c                          |   6 +-
+ CORE/VOSS/src/vos_utils.c                          |   6 +-
+ CORE/WDA/src/wlan_qct_wda_debug.h                  |   2 +-
+ Kbuild                                             |   8 +-
+ Makefile                                           |   4 +-
+ 33 files changed, 135 insertions(+), 324 deletions(-)
+
+diff --git a/CORE/CLD_TXRX/TXRX/ol_txrx_internal.h b/CORE/CLD_TXRX/TXRX/ol_txrx_internal.h
+index 73bb08e..ae8545b 100644
 --- a/CORE/CLD_TXRX/TXRX/ol_txrx_internal.h
 +++ b/CORE/CLD_TXRX/TXRX/ol_txrx_internal.h
 @@ -106,7 +106,7 @@ extern unsigned g_txrx_print_level;
@@ -13,9 +52,11 @@ Forwarded: not-needed
  #include <adf_os_types.h> /* adf_os_vprint */
  
  /* Supress 4296 - expression is always true
+diff --git a/CORE/EPPING/src/epping_rx.c b/CORE/EPPING/src/epping_rx.c
+index 978ad46..6caf495 100644
 --- a/CORE/EPPING/src/epping_rx.c
 +++ b/CORE/EPPING/src/epping_rx.c
-@@ -164,7 +164,10 @@ void epping_rx(void *ctx, HTC_PACKET *pP
+@@ -164,7 +164,10 @@ void epping_rx(void *ctx, HTC_PACKET *pPacket)
                     sizeof(unsigned int));
                 epping_set_kperf_flag(pAdapter, eid, false);
                 adf_net_buf_debug_release_skb(pktSkb);
@@ -27,7 +68,7 @@ Forwarded: not-needed
                 break;
              case 0: /* RXPERF hard code 0 in FW */
                 adf_nbuf_free(pktSkb);
-@@ -177,11 +180,17 @@ void epping_rx(void *ctx, HTC_PACKET *pP
+@@ -177,11 +180,17 @@ void epping_rx(void *ctx, HTC_PACKET *pPacket)
              case EPPING_CMD_CAPTURE_RECV_CNT:
                 epping_set_kperf_flag(pAdapter, eid, false);
                 adf_net_buf_debug_release_skb(pktSkb);
@@ -47,7 +88,7 @@ Forwarded: not-needed
                 pEpping_ctx->kperf_num_rx_recv[eid]++;
                 if ((pAdapter->stats.rx_packets % EPPING_STATS_LOG_COUNT) == 0) {
                     EPPING_LOG(VOS_TRACE_LEVEL_FATAL, "%s: total_rx_pkts = %lu",
-@@ -191,7 +200,10 @@ void epping_rx(void *ctx, HTC_PACKET *pP
+@@ -191,7 +200,10 @@ void epping_rx(void *ctx, HTC_PACKET *pPacket)
              }
           } else {
              adf_net_buf_debug_release_skb(pktSkb);
@@ -59,9 +100,11 @@ Forwarded: not-needed
              if ((pAdapter->stats.rx_packets % EPPING_STATS_LOG_COUNT) == 0) {
                 EPPING_LOG(VOS_TRACE_LEVEL_FATAL, "%s: total_rx_pkts = %lu",
                    __func__, pAdapter->stats.rx_packets);
+diff --git a/CORE/EPPING/src/epping_txrx.c b/CORE/EPPING/src/epping_txrx.c
+index 49e260a..a08f04a 100644
 --- a/CORE/EPPING/src/epping_txrx.c
 +++ b/CORE/EPPING/src/epping_txrx.c
-@@ -252,7 +252,8 @@ static int epping_set_mac_address(struct
+@@ -252,7 +252,8 @@ static int epping_set_mac_address(struct net_device *dev, void *addr)
     struct sockaddr *psta_mac_addr = addr;
     vos_mem_copy(&pAdapter->macAddressCurrent,
                  psta_mac_addr->sa_data, ETH_ALEN);
@@ -71,7 +114,7 @@ Forwarded: not-needed
     return 0;
  }
  
-@@ -397,7 +398,9 @@ epping_adapter_t *epping_add_adapter(epp
+@@ -397,7 +398,9 @@ epping_adapter_t *epping_add_adapter(epping_context_t *pEpping_ctx,
     pAdapter->dev = dev;
     pAdapter->pEpping_ctx = pEpping_ctx;
     pAdapter->device_mode = device_mode; /* station, SAP, etc */
@@ -82,9 +125,11 @@ Forwarded: not-needed
     vos_mem_copy(pAdapter->macAddressCurrent.bytes,
                  macAddr, sizeof(tSirMacAddr));
     adf_os_spinlock_init(&pAdapter->data_lock);
+diff --git a/CORE/HDD/src/wlan_hdd_assoc.c b/CORE/HDD/src/wlan_hdd_assoc.c
+index c09f9b1..b1cbf95 100644
 --- a/CORE/HDD/src/wlan_hdd_assoc.c
 +++ b/CORE/HDD/src/wlan_hdd_assoc.c
-@@ -2155,7 +2155,7 @@ static void hdd_send_roamed_ind(struct n
+@@ -2155,7 +2155,7 @@ static void hdd_send_roamed_ind(struct net_device *dev,
  {
  	struct cfg80211_roam_info info = {0};
  
@@ -93,7 +138,7 @@ Forwarded: not-needed
  	info.links[0].bss = bss;
  #else
  	info.bss = bss;
-@@ -6461,7 +6461,7 @@ static int __iw_get_ap_address(struct ne
+@@ -6461,7 +6461,7 @@ static int __iw_get_ap_address(struct net_device *dev,
      }
      else
      {
@@ -102,9 +147,11 @@ Forwarded: not-needed
      }
      EXIT();
      return 0;
+diff --git a/CORE/HDD/src/wlan_hdd_cfg80211.c b/CORE/HDD/src/wlan_hdd_cfg80211.c
+index 8687a6d..7ff80f4 100644
 --- a/CORE/HDD/src/wlan_hdd_cfg80211.c
 +++ b/CORE/HDD/src/wlan_hdd_cfg80211.c
-@@ -1642,7 +1642,7 @@ static int __is_driver_dfs_capable(struc
+@@ -1642,7 +1642,7 @@ static int __is_driver_dfs_capable(struct wiphy *wiphy,
  
  #if (LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)) || \
      defined (DFS_MASTER_OFFLOAD_IND_SUPPORT) || defined(WITH_BACKPORTS)
@@ -113,7 +160,7 @@ Forwarded: not-needed
  #endif
  
      temp_skbuff = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(u32) +
-@@ -16786,7 +16786,7 @@ int wlan_hdd_cfg80211_init(struct device
+@@ -16786,7 +16786,7 @@ int wlan_hdd_cfg80211_init(struct device *dev,
  #if (LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)) || \
      defined (DFS_MASTER_OFFLOAD_IND_SUPPORT) || defined(WITH_BACKPORTS)
      if (pCfg->enableDFSMasterCap) {
@@ -122,7 +169,7 @@ Forwarded: not-needed
      }
  #endif
  
-@@ -19543,7 +19543,7 @@ static int wlan_hdd_cfg80211_del_beacon(
+@@ -19543,7 +19543,7 @@ static int wlan_hdd_cfg80211_del_beacon(struct wiphy *wiphy,
   */
  static int wlan_hdd_cfg80211_stop_ap(struct wiphy *wiphy,
  					struct net_device *dev
@@ -131,7 +178,7 @@ Forwarded: not-needed
  					, unsigned int link_id
  #endif
  					)
-@@ -19949,10 +19949,11 @@ static void wlan_hdd_cfg80211_stop_p2p_d
+@@ -19949,10 +19949,11 @@ static void wlan_hdd_cfg80211_stop_p2p_dev(struct wiphy *wiphy,
  
  static int __wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
                                             struct net_device *dev,
@@ -144,7 +191,7 @@ Forwarded: not-needed
      beacon_data_t *old,*new;
      int status;
  
-@@ -19998,7 +19999,7 @@ static int __wlan_hdd_cfg80211_change_be
+@@ -19998,7 +19999,7 @@ static int __wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
          return -EINVAL;
      }
  
@@ -153,7 +200,7 @@ Forwarded: not-needed
  
      if (status != VOS_STATUS_SUCCESS) {
          hddLog(VOS_TRACE_LEVEL_FATAL, FL("new beacon alloc failed"));
-@@ -20006,7 +20007,7 @@ static int __wlan_hdd_cfg80211_change_be
+@@ -20006,7 +20007,7 @@ static int __wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
      }
  
      pAdapter->sessionCtx.ap.beacon = new;
@@ -162,7 +209,7 @@ Forwarded: not-needed
  
      EXIT();
      return status;
-@@ -20021,7 +20022,7 @@ static int __wlan_hdd_cfg80211_change_be
+@@ -20021,7 +20022,7 @@ static int __wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
   */
  static int wlan_hdd_cfg80211_change_beacon(struct wiphy *wiphy,
  					struct net_device *dev,
@@ -171,7 +218,7 @@ Forwarded: not-needed
  {
  	int ret;
  
-@@ -20302,30 +20303,20 @@ static int __wlan_hdd_cfg80211_change_if
+@@ -20302,30 +20303,20 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
                  }
              }
  
@@ -206,7 +253,7 @@ Forwarded: not-needed
  
              hdd_set_ap_ops(pAdapter->dev);
  
-@@ -20934,24 +20925,12 @@ static int __wlan_hdd_change_station(str
+@@ -20934,24 +20925,12 @@ static int __wlan_hdd_change_station(struct wiphy *wiphy,
                  vos_mem_copy(StaParams.extn_capability, params->ext_capab,
                               params->ext_capab_len);
  
@@ -236,7 +283,7 @@ Forwarded: not-needed
  
              /*
               * Note : The Maximum sizeof supported_rates sent by the Supplicant
-@@ -20962,37 +20941,24 @@ static int __wlan_hdd_change_station(str
+@@ -20962,37 +20941,24 @@ static int __wlan_hdd_change_station(struct wiphy *wiphy,
  
              /* To avoid Data Corruption, set to max length
                 to SIR_MAC_MAX_SUPP_RATES */
@@ -278,7 +325,7 @@ Forwarded: not-needed
  
              if (0 != params->ext_capab_len ) {
                  /*Define A Macro : TODO Sunil*/
-@@ -21005,14 +20971,10 @@ static int __wlan_hdd_change_station(str
+@@ -21005,14 +20971,10 @@ static int __wlan_hdd_change_station(struct wiphy *wiphy,
                  }
              }
  
@@ -297,7 +344,7 @@ Forwarded: not-needed
  
              hddLog(VOS_TRACE_LEVEL_INFO,
                     FL("%s: TDLS Peer is QOS capable is_qos_wmm_sta= %d HTcapPresent = %d"),
-@@ -21435,7 +21397,7 @@ static int __wlan_hdd_cfg80211_add_key(
+@@ -21435,7 +21397,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
  
  static int wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
                                        struct net_device *ndev,
@@ -315,7 +362,7 @@ Forwarded: not-needed
                          int link_id,
  #endif
                          u8 key_index, bool pairwise,
-@@ -21679,7 +21641,7 @@ static int __wlan_hdd_cfg80211_del_key(s
+@@ -21679,7 +21641,7 @@ static int __wlan_hdd_cfg80211_del_key(struct wiphy *wiphy,
   */
  static int wlan_hdd_cfg80211_del_key(struct wiphy *wiphy,
  					struct net_device *dev,
@@ -324,7 +371,7 @@ Forwarded: not-needed
  					int link_id,
  #endif
  					u8 key_index,
-@@ -21817,7 +21779,7 @@ static int __wlan_hdd_cfg80211_set_defau
+@@ -21817,7 +21779,7 @@ static int __wlan_hdd_cfg80211_set_default_key( struct wiphy *wiphy,
  
  static int wlan_hdd_cfg80211_set_default_key( struct wiphy *wiphy,
                                                struct net_device *ndev,
@@ -333,7 +380,7 @@ Forwarded: not-needed
                                                int link_id,
  #endif
                                                u8 key_index,
-@@ -25306,15 +25268,7 @@ static int __wlan_hdd_cfg80211_connect(
+@@ -25306,15 +25268,7 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
                              req->bssid, req->ssid,
                              req->ssid_len);
                  if (bss) {
@@ -350,7 +397,7 @@ Forwarded: not-needed
                      return -ETIMEDOUT;
                  }
              }
-@@ -28084,7 +28038,7 @@ static int __wlan_hdd_set_default_mgmt_k
+@@ -28084,7 +28038,7 @@ static int __wlan_hdd_set_default_mgmt_key(struct wiphy *wiphy,
   */
  static int wlan_hdd_set_default_mgmt_key(struct wiphy *wiphy,
  					   struct net_device *netdev,
@@ -359,7 +406,7 @@ Forwarded: not-needed
  					   int link_id,
  #endif
  					   u8 key_index)
-@@ -32019,7 +31973,7 @@ __wlan_hdd_cfg80211_set_ap_channel_width
+@@ -32019,7 +31973,7 @@ __wlan_hdd_cfg80211_set_ap_channel_width(struct wiphy *wiphy,
  static int
  wlan_hdd_cfg80211_set_ap_channel_width(struct wiphy *wiphy,
  				       struct net_device *dev,
@@ -368,9 +415,11 @@ Forwarded: not-needed
  				       unsigned int link_id,
  #endif
  				       struct cfg80211_chan_def *chandef)
+diff --git a/CORE/HDD/src/wlan_hdd_hostapd.c b/CORE/HDD/src/wlan_hdd_hostapd.c
+index 75b8b73..d0f8071 100644
 --- a/CORE/HDD/src/wlan_hdd_hostapd.c
 +++ b/CORE/HDD/src/wlan_hdd_hostapd.c
-@@ -1068,7 +1068,9 @@ static int __hdd_hostapd_set_mac_address
+@@ -1068,7 +1068,9 @@ static int __hdd_hostapd_set_mac_address(struct net_device *dev, void *addr)
     if (0 != ret)
         return ret;
  
@@ -381,7 +430,7 @@ Forwarded: not-needed
     EXIT();
     return 0;
  }
-@@ -1569,7 +1571,11 @@ VOS_STATUS hdd_chan_change_notify(hdd_ad
+@@ -1569,7 +1571,11 @@ VOS_STATUS hdd_chan_change_notify(hdd_adapter_t *hostapd_adapter,
  		hdd_update_chandef(hostapd_adapter, &chandef, cb_mode);
  
  #if defined(FORCE_MLO_SUPPORT) || (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
@@ -393,7 +442,7 @@ Forwarded: not-needed
  #else
  	cfg80211_ch_switch_notify(dev, &chandef);
  #endif
-@@ -9003,7 +9009,8 @@ hdd_adapter_t* hdd_wlan_create_ap_dev(hd
+@@ -9003,7 +9009,8 @@ hdd_adapter_t* hdd_wlan_create_ap_dev(hdd_context_t *pHddCtx,
          pWlanHostapdDev->mtu = HDD_DEFAULT_MTU;
          pWlanHostapdDev->tx_queue_len = HDD_NETDEV_TX_QUEUE_LEN;
  
@@ -403,7 +452,7 @@ Forwarded: not-needed
          vos_mem_copy(pHostapdAdapter->macAddressCurrent.bytes, (void *)macAddr, sizeof(tSirMacAddr));
  
          pHostapdAdapter->offloads_configured = FALSE;
-@@ -9052,11 +9059,7 @@ VOS_STATUS hdd_register_hostapd( hdd_ada
+@@ -9052,11 +9059,7 @@ VOS_STATUS hdd_register_hostapd( hdd_adapter_t *pAdapter, tANI_U8 rtnl_lock_held
              return VOS_STATUS_E_FAILURE;
           }
        }
@@ -415,9 +464,11 @@ Forwarded: not-needed
        {
           hddLog(VOS_TRACE_LEVEL_FATAL,
                  "%s:Failed:register_netdevice", __func__);
+diff --git a/CORE/HDD/src/wlan_hdd_main.c b/CORE/HDD/src/wlan_hdd_main.c
+index c1fa7f6..6f3b20c 100644
 --- a/CORE/HDD/src/wlan_hdd_main.c
 +++ b/CORE/HDD/src/wlan_hdd_main.c
-@@ -8703,11 +8703,7 @@ static int __hdd_ioctl(struct net_device
+@@ -8703,11 +8703,7 @@ static int __hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
   *
   * Return: 0 for success and error number for failure.
   */
@@ -429,7 +480,7 @@ Forwarded: not-needed
  {
  	int ret;
  
-@@ -10769,11 +10765,8 @@ static int __hdd_set_mac_address(struct
+@@ -10769,11 +10765,8 @@ static int __hdd_set_mac_address(struct net_device *dev, void *addr)
  		return ret;
  
  	memcpy(&pAdapter->macAddressCurrent, psta_mac_addr->sa_data, ETH_ALEN);
@@ -443,7 +494,7 @@ Forwarded: not-needed
  
  	EXIT();
  	return 0;
-@@ -10992,11 +10985,7 @@ static struct net_device_ops wlan_drv_op
+@@ -10992,11 +10985,7 @@ static struct net_device_ops wlan_drv_ops = {
        .ndo_start_xmit = hdd_hard_start_xmit,
        .ndo_tx_timeout = hdd_tx_timeout,
        .ndo_get_stats = hdd_stats,
@@ -455,7 +506,7 @@ Forwarded: not-needed
        .ndo_set_mac_address = hdd_set_mac_address,
        .ndo_select_queue    = hdd_select_queue,
  #ifdef WLAN_FEATURE_PACKET_FILTERING
-@@ -11244,11 +11233,9 @@ static hdd_adapter_t* hdd_alloc_station_
+@@ -11244,11 +11233,9 @@ static hdd_adapter_t* hdd_alloc_station_adapter(hdd_context_t *pHddCtx,
        strlcpy(pAdapter->ifname, name, IFNAMSIZ);
  #endif
  
@@ -470,7 +521,7 @@ Forwarded: not-needed
        vos_mem_copy( pAdapter->macAddressCurrent.bytes, macAddr, sizeof(tSirMacAddr));
        pWlanDev->watchdog_timeo = HDD_TX_TIMEOUT;
        /*
-@@ -11319,12 +11306,10 @@ static hdd_adapter_t *hdd_alloc_monitor_
+@@ -11319,12 +11306,10 @@ static hdd_adapter_t *hdd_alloc_monitor_adapter(hdd_context_t *pHddCtx,
  	   /* Init the net_device structure */
  	   strlcpy(pwlan_dev->name, name, IFNAMSIZ);
  
@@ -487,7 +538,7 @@ Forwarded: not-needed
  	   vos_mem_copy(pAdapter->macAddressCurrent.bytes,
  			macAddr, sizeof(tSirMacAddr));
  	   pwlan_dev->watchdog_timeo = HDD_TX_TIMEOUT;
-@@ -11372,11 +11357,7 @@ VOS_STATUS hdd_register_interface( hdd_a
+@@ -11372,11 +11357,7 @@ VOS_STATUS hdd_register_interface( hdd_adapter_t *pAdapter, tANI_U8 rtnl_lock_he
              return VOS_STATUS_E_FAILURE;
           }
        }
@@ -499,7 +550,7 @@ Forwarded: not-needed
        {
           hddLog(VOS_TRACE_LEVEL_ERROR,"%s:Failed:register_netdev",__func__);
           return VOS_STATUS_E_FAILURE;
-@@ -11758,11 +11739,7 @@ void hdd_cleanup_adapter(hdd_context_t *
+@@ -11758,11 +11739,7 @@ void hdd_cleanup_adapter(hdd_context_t *pHddCtx, hdd_adapter_t *pAdapter,
  
     if (test_bit(NET_DEVICE_REGISTERED, &pAdapter->event_flags)) {
        if (rtnl_held) {
@@ -523,7 +574,7 @@ Forwarded: not-needed
  	else
  		unregister_netdev(adapter->dev);
  
-@@ -13480,7 +13453,7 @@ static void hdd_connect_done(struct net_
+@@ -13480,7 +13453,7 @@ static void hdd_connect_done(struct net_device *dev, const u8 *bssid,
      struct cfg80211_connect_resp_params fils_params;
      vos_mem_zero(&fils_params, sizeof(fils_params));
  
@@ -532,7 +583,7 @@ Forwarded: not-needed
      fils_params.links[0].bssid = bssid;
  #else
      fils_params.bssid = bssid;
-@@ -13496,7 +13469,7 @@ static void hdd_connect_done(struct net_
+@@ -13496,7 +13469,7 @@ static void hdd_connect_done(struct net_device *dev, const u8 *bssid,
          fils_params.req_ie_len = req_ie_len;
          fils_params.resp_ie = resp_ie;
          fils_params.resp_ie_len = resp_ie_len;
@@ -551,9 +602,11 @@ Forwarded: not-needed
  /**
   * hdd_hif_register_driver() - API for HDD to register with HIF
   *
+diff --git a/CORE/HDD/src/wlan_hdd_memdump.c b/CORE/HDD/src/wlan_hdd_memdump.c
+index e6a6478..6f4ea14 100644
 --- a/CORE/HDD/src/wlan_hdd_memdump.c
 +++ b/CORE/HDD/src/wlan_hdd_memdump.c
-@@ -68,7 +68,7 @@ static void *memdump_get_file_data(struc
+@@ -68,7 +68,7 @@ static void *memdump_get_file_data(struct file *file)
  {
  	void *hdd_ctx;
  
@@ -562,9 +615,11 @@ Forwarded: not-needed
  	return hdd_ctx;
  }
  #else
+diff --git a/CORE/HDD/src/wlan_hdd_softap_tx_rx.c b/CORE/HDD/src/wlan_hdd_softap_tx_rx.c
+index 3b34606..eb6eccb 100644
 --- a/CORE/HDD/src/wlan_hdd_softap_tx_rx.c
 +++ b/CORE/HDD/src/wlan_hdd_softap_tx_rx.c
-@@ -1000,7 +1000,10 @@ VOS_STATUS hdd_softap_rx_packet_cbk(v_VO
+@@ -1000,7 +1000,10 @@ VOS_STATUS hdd_softap_rx_packet_cbk(v_VOID_t *vosContext,
            * This is the last packet on the chain
            * Scheduling rx sirq
            */
@@ -576,14 +631,16 @@ Forwarded: not-needed
        }
  
        if (NET_RX_SUCCESS == rxstat)
-@@ -1329,4 +1332,3 @@ VOS_STATUS hdd_softap_GetStaId(hdd_adapt
+@@ -1329,4 +1332,3 @@ VOS_STATUS hdd_softap_GetStaId(hdd_adapter_t *pAdapter, v_MACADDR_t *pMacAddress
  
      return VOS_STATUS_E_FAILURE;
  }
 -
+diff --git a/CORE/HDD/src/wlan_hdd_tx_rx.c b/CORE/HDD/src/wlan_hdd_tx_rx.c
+index 7046632..b3ea6e2 100644
 --- a/CORE/HDD/src/wlan_hdd_tx_rx.c
 +++ b/CORE/HDD/src/wlan_hdd_tx_rx.c
-@@ -1279,7 +1279,10 @@ VOS_STATUS hdd_mon_rx_packet_cbk(v_VOID_
+@@ -1279,7 +1279,10 @@ VOS_STATUS hdd_mon_rx_packet_cbk(v_VOID_t *vos_ctx, adf_nbuf_t rx_buf,
  			 * This is the last packet on the chain
  			 * Scheduling rx sirq
  			 */
@@ -595,7 +652,7 @@ Forwarded: not-needed
  		}
  
  		if (NET_RX_SUCCESS == rxstat)
-@@ -1344,7 +1347,10 @@ VOS_STATUS hdd_vir_mon_rx_cbk(v_VOID_t *
+@@ -1344,7 +1347,10 @@ VOS_STATUS hdd_vir_mon_rx_cbk(v_VOID_t *vos_ctx, adf_nbuf_t rx_buf,
  			 * This is the last packet on the chain
  			 * Scheduling rx sirq
  			 */
@@ -607,7 +664,7 @@ Forwarded: not-needed
  		}
  
  		skb = skb_next;
-@@ -1476,8 +1482,10 @@ VOS_STATUS hdd_rx_packet_cbk(v_VOID_t *v
+@@ -1476,8 +1482,10 @@ VOS_STATUS hdd_rx_packet_cbk(v_VOID_t *vosContext,
     while (NULL != skb) {
        skb_next = skb->next;
  
@@ -619,7 +676,7 @@ Forwarded: not-needed
           vos_is_load_unload_in_progress(VOS_MODULE_ID_VOSS, NULL)) {
              ++pAdapter->hdd_stats.hddTxRxStats.rxDropped[cpu_index];
              VOS_TRACE(VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO,
-@@ -1588,7 +1596,10 @@ VOS_STATUS hdd_rx_packet_cbk(v_VOID_t *v
+@@ -1588,7 +1596,10 @@ VOS_STATUS hdd_rx_packet_cbk(v_VOID_t *vosContext,
             * This is the last packet on the chain
             * Scheduling rx sirq
             */
@@ -631,6 +688,8 @@ Forwarded: not-needed
        }
  
        if (NET_RX_SUCCESS == rxstat)
+diff --git a/CORE/MAC/src/include/parserApi.h b/CORE/MAC/src/include/parserApi.h
+index 158ed57..1f27a8c 100644
 --- a/CORE/MAC/src/include/parserApi.h
 +++ b/CORE/MAC/src/include/parserApi.h
 @@ -38,7 +38,7 @@
@@ -642,6 +701,8 @@ Forwarded: not-needed
  #include "sirMacPropExts.h"
  #include "dot11f.h"
  #ifdef WLAN_FEATURE_VOWIFI_11R
+diff --git a/CORE/MAC/src/include/utilsApi.h b/CORE/MAC/src/include/utilsApi.h
+index d81ee00..ae1d5d8 100644
 --- a/CORE/MAC/src/include/utilsApi.h
 +++ b/CORE/MAC/src/include/utilsApi.h
 @@ -39,7 +39,7 @@
@@ -653,6 +714,8 @@ Forwarded: not-needed
  #include <sirCommon.h>
  #include "aniGlobal.h"
  #include "utilsGlobal.h"
+diff --git a/CORE/SERVICES/BMI/bmi.c b/CORE/SERVICES/BMI/bmi.c
+index e384604..b0d9013 100644
 --- a/CORE/SERVICES/BMI/bmi.c
 +++ b/CORE/SERVICES/BMI/bmi.c
 @@ -102,15 +102,9 @@ BMIInit(struct ol_softc *scn)
@@ -715,7 +778,7 @@ Forwarded: not-needed
  #endif
          scn->pBMIRspBuf = NULL;
          scn->BMIRsp_pa = 0;
-@@ -222,13 +200,8 @@ BMIDone(HIF_DEVICE *device, struct ol_so
+@@ -222,13 +200,8 @@ BMIDone(HIF_DEVICE *device, struct ol_softc *scn)
  #ifndef HIF_PCI
          A_FREE(scn->pBMICmdBuf);
  #else
@@ -729,7 +792,7 @@ Forwarded: not-needed
  #endif
          scn->pBMICmdBuf = NULL;
          scn->BMICmd_pa = 0;
-@@ -238,13 +211,8 @@ BMIDone(HIF_DEVICE *device, struct ol_so
+@@ -238,13 +211,8 @@ BMIDone(HIF_DEVICE *device, struct ol_softc *scn)
  #ifndef HIF_PCI
          A_FREE(scn->pBMIRspBuf);
  #else
@@ -743,6 +806,8 @@ Forwarded: not-needed
  #endif
          scn->pBMIRspBuf = NULL;
          scn->BMIRsp_pa = 0;
+diff --git a/CORE/SERVICES/COMMON/osapi_linux.h b/CORE/SERVICES/COMMON/osapi_linux.h
+index 1c58d3b..cb7b3ac 100644
 --- a/CORE/SERVICES/COMMON/osapi_linux.h
 +++ b/CORE/SERVICES/COMMON/osapi_linux.h
 @@ -69,23 +69,6 @@
@@ -769,6 +834,8 @@ Forwarded: not-needed
  /*
   * Endianes macros
   */
+diff --git a/CORE/SERVICES/HIF/PCIe/copy_engine.c b/CORE/SERVICES/HIF/PCIe/copy_engine.c
+index 375ffb7..29ff9e3 100644
 --- a/CORE/SERVICES/HIF/PCIe/copy_engine.c
 +++ b/CORE/SERVICES/HIF/PCIe/copy_engine.c
 @@ -1673,15 +1673,9 @@ CE_init(struct hif_pci_softc *sc,
@@ -832,9 +899,11 @@ Forwarded: not-needed
          A_FREE(CE_state->dest_ring);
  
          /* epping */
+diff --git a/CORE/SERVICES/HIF/PCIe/hif_pci.c b/CORE/SERVICES/HIF/PCIe/hif_pci.c
+index 2f321b0..4aed580 100644
 --- a/CORE/SERVICES/HIF/PCIe/hif_pci.c
 +++ b/CORE/SERVICES/HIF/PCIe/hif_pci.c
-@@ -1166,25 +1166,15 @@ HIFDiagReadMem(HIF_DEVICE *hif_device, A
+@@ -1166,25 +1166,15 @@ HIFDiagReadMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nbyt
       *   2) Buffer in DMA-able space
       */
      orig_nbytes = nbytes;
@@ -874,7 +943,7 @@ Forwarded: not-needed
      }
  
      AR_DEBUG_PRINTF(ATH_DEBUG_TRC, ("-%s\n",__FUNCTION__));
-@@ -1344,14 +1329,9 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device,
+@@ -1344,14 +1329,9 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nby
       *   2) Buffer in DMA-able space
       */
      orig_nbytes = nbytes;
@@ -889,7 +958,7 @@ Forwarded: not-needed
      if (!data_buf) {
          status = A_NO_MEMORY;
          goto done;
-@@ -1359,12 +1339,7 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device,
+@@ -1359,12 +1339,7 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nby
  
      /* Copy caller's data to allocated DMA buf */
      A_MEMCPY(data_buf, data, orig_nbytes);
@@ -916,7 +985,7 @@ Forwarded: not-needed
      }
  
      if (status != A_OK) {
-@@ -1614,13 +1584,8 @@ hif_post_recv_buffers_for_pipe(struct HI
+@@ -1614,13 +1584,8 @@ hif_post_recv_buffers_for_pipe(struct HIF_CE_pipe_info *pipe_info)
  
          CE_data = adf_nbuf_get_frag_paddr_lo(nbuf, 0);
  
@@ -930,7 +999,7 @@ Forwarded: not-needed
          status = CE_recv_buf_enqueue(ce_hdl, (void *)nbuf, CE_data);
          A_ASSERT(status == EOK);
          if (status != EOK) {
-@@ -2110,12 +2075,7 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device
+@@ -2110,12 +2075,7 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device,
          transaction->bmi_response_host = bmi_response;
          transaction->bmi_response_CE = CE_response;
          /* dma_cache_sync(dev, bmi_response, BMI_DATASZ_MAX, DMA_FROM_DEVICE); */
@@ -943,7 +1012,7 @@ Forwarded: not-needed
          CE_recv_buf_enqueue(ce_recv, transaction, transaction->bmi_response_CE);
          /* NB: see HIF_BMI_recv_done */
      } else {
-@@ -2124,12 +2084,7 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device
+@@ -2124,12 +2084,7 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device,
      }
  
      /* dma_cache_sync(dev, bmi_request, request_length, DMA_TO_DEVICE); */
@@ -956,6 +1025,8 @@ Forwarded: not-needed
  
      status = CE_send(ce_send, transaction, CE_request, request_length, -1, 0);
      ASSERT(status == EOK);
+diff --git a/CORE/SERVICES/HIF/PCIe/if_pci.c b/CORE/SERVICES/HIF/PCIe/if_pci.c
+index dd4c47c..4fd2713 100644
 --- a/CORE/SERVICES/HIF/PCIe/if_pci.c
 +++ b/CORE/SERVICES/HIF/PCIe/if_pci.c
 @@ -1665,39 +1665,23 @@ again:
@@ -1038,9 +1109,11 @@ Forwarded: not-needed
      if (ret) {
          printk(KERN_ERR "%s: Cannot enable 32-bit consistent DMA!\n",
                 __func__);
+diff --git a/CORE/SERVICES/HIF/ath_procfs.c b/CORE/SERVICES/HIF/ath_procfs.c
+index 259a17e..d5976f9 100644
 --- a/CORE/SERVICES/HIF/ath_procfs.c
 +++ b/CORE/SERVICES/HIF/ath_procfs.c
-@@ -65,11 +65,11 @@ static void *get_hif_hdl_from_file(struc
+@@ -65,11 +65,11 @@ static void *get_hif_hdl_from_file(struct file *file)
  #endif
  #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
  #if defined(HIF_PCI)
@@ -1055,6 +1128,8 @@ Forwarded: not-needed
  #endif
  #else
  #if defined(HIF_PCI)
+diff --git a/CORE/SERVICES/HIF/sdio/hif_sdio_recv.c b/CORE/SERVICES/HIF/sdio/hif_sdio_recv.c
+index 4c1610c..9fbebfa 100644
 --- a/CORE/SERVICES/HIF/sdio/hif_sdio_recv.c
 +++ b/CORE/SERVICES/HIF/sdio/hif_sdio_recv.c
 @@ -1028,7 +1028,7 @@ int rx_completion_task(void *param)
@@ -1071,9 +1146,11 @@ Forwarded: not-needed
      return status;
  }
 -
+diff --git a/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c b/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
+index 6e2f5b8..61f7d3f 100644
 --- a/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
 +++ b/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
-@@ -832,7 +832,7 @@ static int tx_completion_task(void *para
+@@ -832,7 +832,7 @@ static int tx_completion_task(void *param)
  	while (device->tx_completion_req != NULL)
  		tx_clean_completion_list(device);
  
@@ -1091,9 +1168,11 @@ Forwarded: not-needed
      return 0;
  }
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32))
+diff --git a/CORE/SVC/src/logging/wlan_logging_sock_svc.c b/CORE/SVC/src/logging/wlan_logging_sock_svc.c
+index 97645aa..8c99776 100644
 --- a/CORE/SVC/src/logging/wlan_logging_sock_svc.c
 +++ b/CORE/SVC/src/logging/wlan_logging_sock_svc.c
-@@ -782,7 +782,7 @@ static int wlan_logging_thread(void *Arg
+@@ -782,7 +782,7 @@ static int wlan_logging_thread(void *Arg)
  	}
  
  
@@ -1102,6 +1181,8 @@ Forwarded: not-needed
  
  	return 0;
  }
+diff --git a/CORE/SYS/legacy/src/system/inc/sysDebug.h b/CORE/SYS/legacy/src/system/inc/sysDebug.h
+index 8cf24f9..0a023fa 100644
 --- a/CORE/SYS/legacy/src/system/inc/sysDebug.h
 +++ b/CORE/SYS/legacy/src/system/inc/sysDebug.h
 @@ -37,7 +37,7 @@
@@ -1113,6 +1194,8 @@ Forwarded: not-needed
  # include "utilsApi.h"
  # include "sirDebug.h"
  # include "sirParams.h"
+diff --git a/CORE/SYS/legacy/src/utils/inc/utilsParser.h b/CORE/SYS/legacy/src/utils/inc/utilsParser.h
+index aa2da85..0293aac 100644
 --- a/CORE/SYS/legacy/src/utils/inc/utilsParser.h
 +++ b/CORE/SYS/legacy/src/utils/inc/utilsParser.h
 @@ -39,7 +39,7 @@
@@ -1124,6 +1207,8 @@ Forwarded: not-needed
  #include "sirApi.h"
  #include "dot11f.h"
  #include "utilsApi.h"
+diff --git a/CORE/SYS/legacy/src/utils/src/dot11f.c b/CORE/SYS/legacy/src/utils/src/dot11f.c
+index 7b82bd5..9b74749 100644
 --- a/CORE/SYS/legacy/src/utils/src/dot11f.c
 +++ b/CORE/SYS/legacy/src/utils/src/dot11f.c
 @@ -118,7 +118,7 @@ typedef struct sIEDefn {
@@ -1135,6 +1220,8 @@ Forwarded: not-needed
  
  #ifndef DOT11F_LOG_GATE
  #   define DOT11F_LOG_GATE FRLOGW
+diff --git a/CORE/SYS/legacy/src/utils/src/logApi.c b/CORE/SYS/legacy/src/utils/src/logApi.c
+index 5763688..ba12329 100644
 --- a/CORE/SYS/legacy/src/utils/src/logApi.c
 +++ b/CORE/SYS/legacy/src/utils/src/logApi.c
 @@ -41,7 +41,7 @@
@@ -1146,9 +1233,11 @@ Forwarded: not-needed
  #include "utilsGlobal.h"
  #include "macInitApi.h"
  #include "palApi.h"
+diff --git a/CORE/UTILS/PKTLOG/linux_ac.c b/CORE/UTILS/PKTLOG/linux_ac.c
+index 05922b2..e8f55db 100644
 --- a/CORE/UTILS/PKTLOG/linux_ac.c
 +++ b/CORE/UTILS/PKTLOG/linux_ac.c
-@@ -370,12 +370,16 @@ static int pktlog_sysctl_register(struct
+@@ -370,12 +370,16 @@ static int pktlog_sysctl_register(struct ol_softc *scn)
  	set_ctl_name(0, CTL_AUTO);
  	pl_info_lnx->sysctls[0].procname = PKTLOG_PROC_DIR;
  	pl_info_lnx->sysctls[0].mode = PKTLOG_PROCSYS_DIR_PERM;
@@ -1165,7 +1254,7 @@ Forwarded: not-needed
  	/* [3] is NULL terminator */
  	set_ctl_name(4, CTL_AUTO);
  	pl_info_lnx->sysctls[4].procname = "enable";
-@@ -444,7 +448,11 @@ static int pktlog_sysctl_register(struct
+@@ -444,7 +448,11 @@ static int pktlog_sysctl_register(struct ol_softc *scn)
  
  	/* and register everything */
  	/* register_sysctl_table changed from 2.6.21 onwards */
@@ -1178,7 +1267,7 @@ Forwarded: not-needed
  	pl_info_lnx->sysctl_header =
  			register_sysctl_table(pl_info_lnx->sysctls);
  #else
-@@ -776,7 +784,7 @@ __pktlog_read(struct file *file, char *b
+@@ -776,7 +784,7 @@ __pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
  	int fold_offset, ppos_data, cur_rd_offset;
  #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
  	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
@@ -1187,7 +1276,7 @@ Forwarded: not-needed
  #else
  	struct proc_dir_entry *proc_entry = PDE(file->f_dentry->d_inode);
  	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
-@@ -911,7 +919,7 @@ pktlog_read(struct file *file, char *buf
+@@ -911,7 +919,7 @@ pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
  	size_t ret_val = 0;
  #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
  	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
@@ -1196,6 +1285,8 @@ Forwarded: not-needed
  #else
  	struct proc_dir_entry *proc_entry = PDE(file->f_dentry->d_inode);
  	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
+diff --git a/CORE/VOSS/inc/vos_trace.h b/CORE/VOSS/inc/vos_trace.h
+index f5bc981..ad53386 100644
 --- a/CORE/VOSS/inc/vos_trace.h
 +++ b/CORE/VOSS/inc/vos_trace.h
 @@ -44,7 +44,7 @@
@@ -1207,6 +1298,8 @@ Forwarded: not-needed
  #include  <vos_status.h>
  #include  <i_vos_types.h>
  
+diff --git a/CORE/VOSS/src/vos_nvitem.c b/CORE/VOSS/src/vos_nvitem.c
+index b8119e9..9ab2732 100644
 --- a/CORE/VOSS/src/vos_nvitem.c
 +++ b/CORE/VOSS/src/vos_nvitem.c
 @@ -60,6 +60,7 @@
@@ -1217,7 +1310,7 @@ Forwarded: not-needed
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0)) && !defined(WITH_BACKPORTS)
  #define IEEE80211_CHAN_NO_80MHZ		1<<7
  #endif
-@@ -1539,7 +1540,7 @@ VOS_STATUS vos_nv_getRegDomainFromCountr
+@@ -1539,7 +1540,7 @@ VOS_STATUS vos_nv_getRegDomainFromCountryCode( v_REGDOMAIN_t *pRegDomain,
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)) || !defined(CLD_REGDB)
          INIT_COMPLETION(pHddCtx->reg_init);
  #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0)) || defined(WITH_BACKPORTS)
@@ -1226,11 +1319,13 @@ Forwarded: not-needed
  #else
          regulatory_hint_user(country_code);
  #endif
-@@ -2709,4 +2710,3 @@ VOS_STATUS vos_init_wiphy_from_nv_bin(vo
+@@ -2709,4 +2710,3 @@ VOS_STATUS vos_init_wiphy_from_nv_bin(void)
  
      return VOS_STATUS_SUCCESS;
  }
 -
+diff --git a/CORE/VOSS/src/vos_sched.c b/CORE/VOSS/src/vos_sched.c
+index a0a269d..1f4928d 100644
 --- a/CORE/VOSS/src/vos_sched.c
 +++ b/CORE/VOSS/src/vos_sched.c
 @@ -976,7 +976,7 @@ VosMCThread
@@ -1260,6 +1355,8 @@ Forwarded: not-needed
  }
  #endif
  
+diff --git a/CORE/VOSS/src/vos_utils.c b/CORE/VOSS/src/vos_utils.c
+index f9a2008..255f433 100644
 --- a/CORE/VOSS/src/vos_utils.c
 +++ b/CORE/VOSS/src/vos_utils.c
 @@ -88,7 +88,7 @@
@@ -1271,7 +1368,7 @@ Forwarded: not-needed
  
  /*----------------------------------------------------------------------------
   * Type Declarations
-@@ -696,7 +696,7 @@ int hmac_sha1(v_U8_t *key, v_U8_t ksize,
+@@ -696,7 +696,7 @@ int hmac_sha1(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
      }
  
      ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
@@ -1280,7 +1377,7 @@ Forwarded: not-needed
  
      hash_buff = kzalloc(psize, GFP_KERNEL);
      if (!hash_buff) {
-@@ -869,7 +869,7 @@ int hmac_md5(v_U8_t *key, v_U8_t ksize,
+@@ -869,7 +869,7 @@ int hmac_md5(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
      }
  
      ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
@@ -1289,6 +1386,8 @@ Forwarded: not-needed
  
      hash_buff = kzalloc(psize, GFP_KERNEL);
      if (!hash_buff) {
+diff --git a/CORE/WDA/src/wlan_qct_wda_debug.h b/CORE/WDA/src/wlan_qct_wda_debug.h
+index d741d7b..d42b361 100644
 --- a/CORE/WDA/src/wlan_qct_wda_debug.h
 +++ b/CORE/WDA/src/wlan_qct_wda_debug.h
 @@ -30,7 +30,7 @@
@@ -1300,6 +1399,8 @@ Forwarded: not-needed
  
  #include "utilsApi.h"
  #include "sirDebug.h"
+diff --git a/Kbuild b/Kbuild
+index 26464cd..dcf8bc2 100644
 --- a/Kbuild
 +++ b/Kbuild
 @@ -104,7 +104,7 @@ ifeq ($(KERNEL_BUILD), 0)
@@ -1331,6 +1432,8 @@ Forwarded: not-needed
  endif
  
  ifeq ($(CONFIG_CUSTOMIZED_FIRMWARE_PATH), y)
+diff --git a/Makefile b/Makefile
+index 401b660..777006e 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -17,9 +17,11 @@ KBUILD_OPTIONS += CONFIG_QCA_WIFI_2_0=1

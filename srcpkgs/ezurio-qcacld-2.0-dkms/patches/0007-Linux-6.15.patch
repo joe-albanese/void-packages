@@ -1,0 +1,193 @@
+From: Johannes Schauer Marin Rodrigues <josch@mister-muffin.de>
+Date: Mon, 16 Jun 2025 09:58:12 +0200
+Subject: linux 6.15: del_timer() -> timer_delete() and hrtimer_init() -> hrtimer_setup()
+
+since linux upstream commit 8fa7292fee5c5240402371ea89ab285ec856c916
+
+Since linux upstream commit 9779489a31d77a7b9cb6f20d2d2caced4e29dbe6 (since v6.15-rc1)
+
+---
+ CORE/SERVICES/COMMON/adf/linux/adf_os_timer_pvt.h | 16 ++++++++++++++++
+ CORE/SERVICES/COMMON/osapi_linux.h                |  6 ++++++
+ CORE/SERVICES/HIF/PCIe/hif_pci.c                  |  4 ++++
+ CORE/SERVICES/HIF/PCIe/if_pci.c                   |  4 ++++
+ CORE/VOSS/src/vos_timer.c                         | 12 ++++++++++++
+ Kbuild                                            |  8 ++++----
+ 6 files changed, 46 insertions(+), 4 deletions(-)
+
+diff --git a/CORE/SERVICES/COMMON/adf/linux/adf_os_timer_pvt.h b/CORE/SERVICES/COMMON/adf/linux/adf_os_timer_pvt.h
+index ea8a4a7..9976170 100644
+--- a/CORE/SERVICES/COMMON/adf/linux/adf_os_timer_pvt.h
++++ b/CORE/SERVICES/COMMON/adf/linux/adf_os_timer_pvt.h
+@@ -107,8 +107,12 @@ __adf_os_hrtimer_init(adf_os_handle_t      hdl,
+                     struct hrtimer   *timer,
+                     __adf_os_hrtimer_func_t  func)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++    hrtimer_setup(timer, func, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++#else
+     hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+     timer->function = func;
++#endif
+     return A_STATUS_OK;
+ }
+ 
+@@ -156,7 +160,11 @@ __adf_os_timer_mod(struct timer_list *timer, a_uint32_t delay)
+ static inline a_bool_t
+ __adf_os_timer_cancel(struct timer_list *timer)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++    if (likely(timer_delete(timer)))
++#else
+     if (likely(del_timer(timer)))
++#endif
+         return 1;
+     else
+         return 0;
+@@ -178,7 +186,11 @@ __adf_os_hrtimer_cancel(struct hrtimer *timer)
+ static inline void
+ __adf_os_timer_free(struct timer_list *timer)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++    timer_delete_sync(timer);
++#else
+     del_timer_sync(timer);
++#endif
+ }
+ 
+ /*
+@@ -197,7 +209,11 @@ __adf_os_timer_free(struct timer_list *timer)
+ static inline a_bool_t
+ __adf_os_timer_sync_cancel(struct timer_list *timer)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++    return timer_delete_sync(timer);
++#else
+     return del_timer_sync(timer);
++#endif
+ }
+ 
+ 
+diff --git a/CORE/SERVICES/COMMON/osapi_linux.h b/CORE/SERVICES/COMMON/osapi_linux.h
+index cb7b3ac..80b61ce 100644
+--- a/CORE/SERVICES/COMMON/osapi_linux.h
++++ b/CORE/SERVICES/COMMON/osapi_linux.h
+@@ -193,9 +193,15 @@ typedef struct timer_list               A_TIMER;
+ /*
+  * Cancel the Timer.
+  */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++#define A_UNTIMEOUT(pTimer) do {                                \
++    timer_delete((pTimer));                                        \
++} while (0)
++#else
+ #define A_UNTIMEOUT(pTimer) do {                                \
+     del_timer((pTimer));                                        \
+ } while (0)
++#endif
+ 
+ #define A_DELETE_TIMER(pTimer) do {                             \
+ } while (0)
+diff --git a/CORE/SERVICES/HIF/PCIe/hif_pci.c b/CORE/SERVICES/HIF/PCIe/hif_pci.c
+index 4aed580..9a7bdc1 100644
+--- a/CORE/SERVICES/HIF/PCIe/hif_pci.c
++++ b/CORE/SERVICES/HIF/PCIe/hif_pci.c
+@@ -3464,7 +3464,11 @@ int hif_pm_runtime_allow_suspend(void *ol_sc, void *data)
+ 	 */
+ 	if (hif_sc->prevent_suspend_cnt == 0 &&
+ 			hif_sc->runtime_timer_expires > 0) {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++		timer_delete(&hif_sc->runtime_timer);
++#else
+ 		del_timer(&hif_sc->runtime_timer);
++#endif
+ 		hif_sc->runtime_timer_expires = 0;
+ 	}
+ 
+diff --git a/CORE/SERVICES/HIF/PCIe/if_pci.c b/CORE/SERVICES/HIF/PCIe/if_pci.c
+index 4fd2713..091c3c0 100644
+--- a/CORE/SERVICES/HIF/PCIe/if_pci.c
++++ b/CORE/SERVICES/HIF/PCIe/if_pci.c
+@@ -1499,7 +1499,11 @@ static void hif_pci_pm_runtime_exit(struct hif_pci_softc *sc)
+ 	adf_os_atomic_set(&sc->pm_state, HIF_PM_RUNTIME_STATE_NONE);
+ 
+ 	hif_pci_pm_debugfs(sc, false);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++	timer_delete_sync(&sc->runtime_timer);
++#else
+ 	del_timer_sync(&sc->runtime_timer);
++#endif
+ 	vos_flush_work(&sc->pm_work);
+ }
+ 
+diff --git a/CORE/VOSS/src/vos_timer.c b/CORE/VOSS/src/vos_timer.c
+index 0d0a1ab..8ed6171 100644
+--- a/CORE/VOSS/src/vos_timer.c
++++ b/CORE/VOSS/src/vos_timer.c
+@@ -572,7 +572,11 @@ VOS_STATUS vos_timer_destroy ( vos_timer_t *timer )
+          break;
+       case VOS_TIMER_STATE_RUNNING:
+          /* Stop the timer first */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++         timer_delete(&(timer->platformInfo.Timer));
++#else
+          del_timer(&(timer->platformInfo.Timer));
++#endif
+          vStatus = VOS_STATUS_SUCCESS;
+          break;
+       case VOS_TIMER_STATE_STOPPED:
+@@ -635,7 +639,11 @@ VOS_STATUS vos_timer_destroy ( vos_timer_t *timer )
+          break;
+       case VOS_TIMER_STATE_RUNNING:
+          /* Stop the timer first */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++         timer_delete(&(timer->platformInfo.Timer));
++#else
+          del_timer(&(timer->platformInfo.Timer));
++#endif
+          vStatus = VOS_STATUS_SUCCESS;
+          break;
+       case VOS_TIMER_STATE_STOPPED:
+@@ -823,7 +831,11 @@ VOS_STATUS vos_timer_stop ( vos_timer_t *timer )
+ 
+    timer->state = VOS_TIMER_STATE_STOPPED;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
++   timer_delete(&(timer->platformInfo.Timer));
++#else
+    del_timer(&(timer->platformInfo.Timer));
++#endif
+ 
+    adf_os_spin_unlock_irqrestore( &timer->platformInfo.spinlock);
+ 
+diff --git a/Kbuild b/Kbuild
+index dcf8bc2..e00e657 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -1046,7 +1046,7 @@ ifeq ($(CONFIG_REMOVE_PKT_LOG), 0)
+ OBJS +=		$(PKTLOG_OBJS)
+ endif
+ 
+-EXTRA_CFLAGS += $(INCS)
++ccflags-y += $(INCS)
+ 
+ CDEFINES :=	-DANI_LITTLE_BYTE_ENDIAN \
+ 		-DANI_LITTLE_BIT_ENDIAN \
+@@ -1861,14 +1861,14 @@ KBUILD_CPPFLAGS += $(CDEFINES)
+ 
+ # Currently, for versions of gcc which support it, the kernel Makefile
+ # is disabling the maybe-uninitialized warning.  Re-enable it for the
+-# WLAN driver.  Note that we must use EXTRA_CFLAGS here so that it
++# WLAN driver.  Note that we must use ccflags-y here so that it
+ # will override the kernel settings.
+ ifeq ($(call cc-option-yn, -Wmaybe-uninitialized),y)
+-EXTRA_CFLAGS += -Wmaybe-uninitialized
++ccflags-y += -Wmaybe-uninitialized
+ endif
+ 
+ ifeq ($(call cc-option-yn, -Wheader-guard),y)
+-EXTRA_CFLAGS += -Wheader-guard
++ccflags-y += -Wheader-guard
+ endif
+ 
+ # If the module name is not "wlan", then the define MULTI_IF_NAME to be the
