@@ -1,0 +1,324 @@
+From: Johannes Schauer Marin Rodrigues <josch@mister-muffin.de>
+Date: Wed, 23 Jul 2025 16:08:04 +0200
+Subject: from_timer() was renamed to timer_container_of() and pass net_device
+ to txq_trans_update()
+
+Since linux upstream commit 41cb08555c4164996d67c78b3bf1c658075b75f1 (since v6.16-rc1)
+
+Since linux upstream commit 229671ac60e298b85c2644f52d7e487e9f487d06 (since v6.16-rc1)
+---
+ CORE/CLD_TXRX/HTT/htt_rx.c                         |  9 +++++++-
+ CORE/CLD_TXRX/TXRX/ol_tx.c                         | 17 +++++++++++++--
+ CORE/CLD_TXRX/TXRX/ol_tx_queue.c                   | 24 +++++++++++++++++++---
+ CORE/EPPING/src/epping_txrx.c                      |  4 ++++
+ CORE/HDD/src/wlan_hdd_tx_rx.c                      |  4 ++++
+ CORE/SERVICES/COMMON/osdep_adf.h                   |  4 +++-
+ CORE/SERVICES/DFS/src/dfs.c                        | 10 +++++++--
+ CORE/SERVICES/DFS/src/dfs_debug.c                  |  4 +++-
+ CORE/SERVICES/DFS/src/dfs_nol.c                    |  5 ++++-
+ CORE/SERVICES/HIF/PCIe/copy_engine.c               |  7 ++++++-
+ CORE/SERVICES/HIF/PCIe/hif_pci.c                   |  7 ++++++-
+ CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c |  7 ++++++-
+ CORE/SERVICES/HTC/htc_send.c                       |  9 +++++++-
+ CORE/VOSS/src/vos_timer.c                          |  4 +++-
+ 14 files changed, 99 insertions(+), 16 deletions(-)
+
+diff --git a/CORE/CLD_TXRX/HTT/htt_rx.c b/CORE/CLD_TXRX/HTT/htt_rx.c
+index 4ffc6bf..5fdea85 100644
+--- a/CORE/CLD_TXRX/HTT/htt_rx.c
++++ b/CORE/CLD_TXRX/HTT/htt_rx.c
+@@ -204,7 +204,14 @@ htt_rx_ring_fill_level(struct htt_pdev_t *pdev)
+     return size;
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++static void
++htt_rx_ring_refill_retry(struct timer_list *t)
++{
++	htt_pdev_handle pdev = timer_container_of(pdev, t, rx_ring.refill_retry_timer);
++	htt_rx_msdu_buff_replenish(pdev);
++}
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void
+ htt_rx_ring_refill_retry(struct timer_list *t)
+ {
+diff --git a/CORE/CLD_TXRX/TXRX/ol_tx.c b/CORE/CLD_TXRX/TXRX/ol_tx.c
+index ec247d7..ecfd7b9 100644
+--- a/CORE/CLD_TXRX/TXRX/ol_tx.c
++++ b/CORE/CLD_TXRX/TXRX/ol_tx.c
+@@ -785,7 +785,9 @@ void ol_tx_vdev_ll_pause_queue_send(void *context)
+ #endif
+ {
+ #ifdef QCA_SUPPORT_TXRX_VDEV_LL_TXQ
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++    struct ol_txrx_vdev_t *vdev = timer_container_of(vdev, t, ll_pause.timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+     struct ol_txrx_vdev_t *vdev = from_timer(vdev, t, ll_pause.timer);
+ #else
+     struct ol_txrx_vdev_t *vdev = (struct ol_txrx_vdev_t *) context;
+@@ -2126,7 +2128,18 @@ ol_tx_hl_pdev_queue_send_all(struct ol_txrx_pdev_t* pdev)
+  *
+  * Return: none
+  */
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++void
++ol_tx_hl_vdev_bundle_timer(struct timer_list *t)
++{
++	adf_nbuf_t msdu_list;
++	struct ol_txrx_vdev_t *vdev = timer_container_of(vdev, t, bundle_queue.timer);
++
++	msdu_list = ol_tx_hl_vdev_queue_send_all(vdev, true);
++	if (msdu_list)
++		adf_nbuf_tx_free(msdu_list, 1/*error*/);
++}
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ void
+ ol_tx_hl_vdev_bundle_timer(struct timer_list *t)
+ {
+diff --git a/CORE/CLD_TXRX/TXRX/ol_tx_queue.c b/CORE/CLD_TXRX/TXRX/ol_tx_queue.c
+index 61af6d9..73972a3 100644
+--- a/CORE/CLD_TXRX/TXRX/ol_tx_queue.c
++++ b/CORE/CLD_TXRX/TXRX/ol_tx_queue.c
+@@ -970,7 +970,14 @@ ol_txrx_bad_peer_txctl_update_threshold(struct ol_txrx_pdev_t *pdev,
+ 			tx_limit;
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++void
++ol_tx_pdev_peer_bal_timer(struct timer_list *t)
++{
++	int i;
++	struct ol_txrx_pdev_t *pdev =
++			timer_container_of(pdev, t, tx_peer_bal.peer_bal_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ void
+ ol_tx_pdev_peer_bal_timer(struct timer_list *t)
+ {
+@@ -1302,7 +1309,11 @@ u_int8_t ol_tx_pdev_is_target_empty(void)
+     return 1;
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++void ol_tx_pdev_throttle_phase_timer(struct timer_list *t)
++{
++   struct ol_txrx_pdev_t *pdev = timer_container_of(pdev, t, tx_throttle.phase_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ void ol_tx_pdev_throttle_phase_timer(struct timer_list *t)
+ {
+    struct ol_txrx_pdev_t *pdev = from_timer(pdev, t, tx_throttle.phase_timer);
+@@ -1361,7 +1372,14 @@ void ol_tx_pdev_throttle_phase_timer(void *context)
+ }
+ 
+ #ifdef QCA_SUPPORT_TXRX_VDEV_LL_TXQ
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++void ol_tx_pdev_throttle_tx_timer(struct timer_list *t)
++{
++	struct ol_txrx_pdev_t *pdev =
++			timer_container_of(pdev, t, tx_throttle.tx_timer);
++	ol_tx_pdev_ll_pause_queue_send_all(pdev);
++}
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ void ol_tx_pdev_throttle_tx_timer(struct timer_list *t)
+ {
+ 	struct ol_txrx_pdev_t *pdev =
+diff --git a/CORE/EPPING/src/epping_txrx.c b/CORE/EPPING/src/epping_txrx.c
+index a08f04a..1deb7d6 100644
+--- a/CORE/EPPING/src/epping_txrx.c
++++ b/CORE/EPPING/src/epping_txrx.c
+@@ -67,7 +67,11 @@ static void epping_stop_adapter(epping_adapter_t *pAdapter);
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void epping_timer_expire(struct timer_list *t)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++	epping_adapter_t *pAdapter = timer_container_of(pAdapter, t, epping_timer);
++#else
+ 	epping_adapter_t *pAdapter = from_timer(pAdapter, t, epping_timer);
++#endif
+ 
+ 	if (pAdapter == NULL) {
+ 		EPPING_LOG(VOS_TRACE_LEVEL_FATAL,
+diff --git a/CORE/HDD/src/wlan_hdd_tx_rx.c b/CORE/HDD/src/wlan_hdd_tx_rx.c
+index b3ea6e2..157a003 100644
+--- a/CORE/HDD/src/wlan_hdd_tx_rx.c
++++ b/CORE/HDD/src/wlan_hdd_tx_rx.c
+@@ -1702,7 +1702,11 @@ static void wlan_hdd_update_txq_timestamp(struct net_device *dev)
+ 	for (i = 0; i < NUM_TX_QUEUES; i++) {
+ 		txq = netdev_get_tx_queue(dev, i);
+ 		unlock = __netif_tx_trylock(txq);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++		txq_trans_update(dev, txq);
++#else
+ 		txq_trans_update(txq);
++#endif
+ 		if (unlock == true)
+ 			__netif_tx_unlock(txq);
+ 	}
+diff --git a/CORE/SERVICES/COMMON/osdep_adf.h b/CORE/SERVICES/COMMON/osdep_adf.h
+index 29751fb..77b6024 100644
+--- a/CORE/SERVICES/COMMON/osdep_adf.h
++++ b/CORE/SERVICES/COMMON/osdep_adf.h
+@@ -697,7 +697,9 @@ os_mesgq_handler(struct timer_list *t)
+ os_mesgq_handler(void *timer_arg)
+ #endif
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++    os_mesg_queue_t    *queue = timer_container_of(queue, t, _timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+     os_mesg_queue_t    *queue = from_timer(queue, t, _timer);
+ #else
+     os_mesg_queue_t    *queue = (os_mesg_queue_t*)timer_arg;
+diff --git a/CORE/SERVICES/DFS/src/dfs.c b/CORE/SERVICES/DFS/src/dfs.c
+index c557a15..6fa59bf 100644
+--- a/CORE/SERVICES/DFS/src/dfs.c
++++ b/CORE/SERVICES/DFS/src/dfs.c
+@@ -183,7 +183,10 @@ static void dfs_radar_delay(void *data)
+ 
+ static OS_TIMER_FUNC(dfs_task)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++	struct ath_dfs *dfs = timer_container_of(dfs, t, ath_dfs_task_timer);
++	struct ieee80211com *ic = dfs->ic;
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ 	struct ath_dfs *dfs = from_timer(dfs, t, ath_dfs_task_timer);
+ 	struct ieee80211com *ic = dfs->ic;
+ #else
+@@ -240,7 +243,10 @@ static OS_TIMER_FUNC(dfs_task)
+ static
+ OS_TIMER_FUNC(dfs_testtimer_task)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++    struct ath_dfs *dfs = timer_container_of(dfs, t, ath_dfs_task_timer);
++    struct ieee80211com *ic = dfs->ic;
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+     struct ath_dfs *dfs = from_timer(dfs, t, ath_dfs_task_timer);
+     struct ieee80211com *ic = dfs->ic;
+ #else
+diff --git a/CORE/SERVICES/DFS/src/dfs_debug.c b/CORE/SERVICES/DFS/src/dfs_debug.c
+index efe4264..25e2066 100644
+--- a/CORE/SERVICES/DFS/src/dfs_debug.c
++++ b/CORE/SERVICES/DFS/src/dfs_debug.c
+@@ -162,7 +162,9 @@ void dfs_print_activity(struct ath_dfs *dfs)
+ #ifndef ATH_DFS_RADAR_DETECTION_ONLY
+ OS_TIMER_FUNC(dfs_debug_timeout)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++    struct ath_dfs *dfs = timer_container_of(dfs, t, ath_dfs_task_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+     struct ath_dfs *dfs = from_timer(dfs, t, ath_dfs_task_timer);
+ #else
+     struct ieee80211com *ic;
+diff --git a/CORE/SERVICES/DFS/src/dfs_nol.c b/CORE/SERVICES/DFS/src/dfs_nol.c
+index ea9ea83..7ad0ed7 100644
+--- a/CORE/SERVICES/DFS/src/dfs_nol.c
++++ b/CORE/SERVICES/DFS/src/dfs_nol.c
+@@ -75,7 +75,10 @@ dfs_nol_delete(struct ath_dfs *dfs, u_int16_t delfreq, u_int16_t delchwidth);
+ static
+ OS_TIMER_FUNC(dfs_remove_from_nol)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++    struct dfs_nolelem *elem = timer_container_of(elem, t, nol_timer);
++    struct dfs_nol_timer_arg *nol_arg = elem->dfs_timer_arg;
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+     struct dfs_nolelem *elem = from_timer(elem, t, nol_timer);
+     struct dfs_nol_timer_arg *nol_arg = elem->dfs_timer_arg;
+ #else
+diff --git a/CORE/SERVICES/HIF/PCIe/copy_engine.c b/CORE/SERVICES/HIF/PCIe/copy_engine.c
+index 29ff9e3..73cab02 100644
+--- a/CORE/SERVICES/HIF/PCIe/copy_engine.c
++++ b/CORE/SERVICES/HIF/PCIe/copy_engine.c
+@@ -1304,7 +1304,12 @@ more_watermarks:
+     A_TARGET_ACCESS_END(targid);
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++static void
++CE_poll_timeout(struct timer_list *t)
++{
++   struct CE_state *CE_state = timer_container_of(CE_state, t, poll_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void
+ CE_poll_timeout(struct timer_list *t)
+ {
+diff --git a/CORE/SERVICES/HIF/PCIe/hif_pci.c b/CORE/SERVICES/HIF/PCIe/hif_pci.c
+index 9a7bdc1..2968709 100644
+--- a/CORE/SERVICES/HIF/PCIe/hif_pci.c
++++ b/CORE/SERVICES/HIF/PCIe/hif_pci.c
+@@ -2359,7 +2359,12 @@ HIF_wake_target_cpu(struct hif_pci_softc *sc)
+ 
+ #define HIF_MIN_SLEEP_INACTIVITY_TIME_MS     50
+ #define HIF_SLEEP_INACTIVITY_TIMER_PERIOD_MS 60
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++static void
++HIF_sleep_entry(struct timer_list *t)
++{
++	 struct HIF_CE_state *hif_state = timer_container_of(hif_state, t, sleep_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void
+ HIF_sleep_entry(struct timer_list *t)
+ {
+diff --git a/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c b/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
+index 61f7d3f..cddfb2d 100644
+--- a/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
++++ b/CORE/SERVICES/HIF/sdio/linux/native_sdio/src/hif.c
+@@ -1489,7 +1489,12 @@ static void hif_oob_irq_handler(void *dev_para)
+ }
+ 
+ #ifdef HIF_MBOX_SLEEP_WAR
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++static void
++HIF_sleep_entry(struct timer_list *t)
++{
++    HIF_DEVICE *device = timer_container_of(device, t, sleep_timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void
+ HIF_sleep_entry(struct timer_list *t)
+ {
+diff --git a/CORE/SERVICES/HTC/htc_send.c b/CORE/SERVICES/HTC/htc_send.c
+index f17247a..0ea04a1 100644
+--- a/CORE/SERVICES/HTC/htc_send.c
++++ b/CORE/SERVICES/HTC/htc_send.c
+@@ -159,7 +159,14 @@ static void SendPacketCompletion(HTC_TARGET *target, HTC_PACKET *pPacket)
+     DoSendCompletion(pEndpoint,&container);
+ }
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++void
++HTCSendCompleteCheckCleanup(struct timer_list *t)
++{
++	HTC_ENDPOINT *pEndpoint = timer_container_of(pEndpoint, t, ul_poll_timer);
++	HTCSendCompleteCheck(pEndpoint, 1);
++}
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ void
+ HTCSendCompleteCheckCleanup(struct timer_list *t)
+ {
+diff --git a/CORE/VOSS/src/vos_timer.c b/CORE/VOSS/src/vos_timer.c
+index 8ed6171..315c76b 100644
+--- a/CORE/VOSS/src/vos_timer.c
++++ b/CORE/VOSS/src/vos_timer.c
+@@ -118,7 +118,9 @@ static void vos_linux_timer_callback (struct timer_list *t)
+ static void vos_linux_timer_callback (void *data)
+ #endif
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
++   vos_timer_t *timer = timer_container_of(timer, t, platformInfo.Timer);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+    vos_timer_t *timer = from_timer(timer, t, platformInfo.Timer);
+ #else
+    vos_timer_t *timer = ( vos_timer_t *)data;

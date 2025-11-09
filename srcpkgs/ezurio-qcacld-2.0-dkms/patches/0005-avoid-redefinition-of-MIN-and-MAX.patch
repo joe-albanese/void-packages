@@ -1,9 +1,16 @@
 From: Johannes Schauer Marin Rodrigues <josch@debian.org>
+Date: Wed, 30 Apr 2025 06:11:49 +0200
 Subject: avoid redefinition of MIN and MAX
 
+---
+ CORE/SERVICES/COMMON/osdep_adf.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/CORE/SERVICES/COMMON/osdep_adf.h b/CORE/SERVICES/COMMON/osdep_adf.h
+index f70fe17..29751fb 100644
 --- a/CORE/SERVICES/COMMON/osdep_adf.h
 +++ b/CORE/SERVICES/COMMON/osdep_adf.h
-@@ -962,8 +962,12 @@ typedef struct scatterlist            sg
+@@ -968,8 +968,12 @@ typedef struct scatterlist            sg_t;
  #define ARRAY_LENGTH(a)         (sizeof(a) / sizeof((a)[0]))
  #endif
  

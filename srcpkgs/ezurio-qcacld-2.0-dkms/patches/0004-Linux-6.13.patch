@@ -1,11 +1,19 @@
 From: Johannes Schauer Marin Rodrigues <josch@debian.org>
-Subject: Convert symbol namespace to string literal
+Date: Wed, 30 Apr 2025 06:11:49 +0200
+Subject: Linux 6.13
+
+Convert symbol namespace to string literal
 
 Required since upstream commit cdd30ebb1b9f36159d66f088b61aee264e649d7a
+---
+ CORE/VOSS/src/vos_utils.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/CORE/VOSS/src/vos_utils.c b/CORE/VOSS/src/vos_utils.c
+index 255f433..ff76369 100644
 --- a/CORE/VOSS/src/vos_utils.c
 +++ b/CORE/VOSS/src/vos_utils.c
-@@ -1098,5 +1098,9 @@ int vos_status_to_os_return(VOS_STATUS s
+@@ -1098,5 +1098,9 @@ int vos_status_to_os_return(VOS_STATUS status)
  	}
  }
  #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,12,0)) || defined(FORCE_CRYPTO_INTERNAL)

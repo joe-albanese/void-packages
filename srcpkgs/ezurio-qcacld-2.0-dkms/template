@@ -10,8 +10,8 @@ depends="dkms zstd gcc make"
 dkms_modules="ezurio-qcacld-2.0 ${version}"
 #make_use_env=yes
 triggers="dkms initramfs-regenerate"
-distfiles="http://deb.debian.org/debian/pool/main/e/ezurio-qcacld-2.0-dkms/ezurio-qcacld-2.0-dkms_0.0~git20240408.aa96a9f+dfsg.orig.tar.xz"
-checksum=dd0f4705e56248424ceedeccf0ddafeb8592993470ebff1f7397347a2dbe68a9
+distfiles="https://salsa.debian.org/debian/ezurio-qcacld-2.0-dkms/-/archive/debian/0.0_git20240408.aa96a9f+dfsg-7/ezurio-qcacld-2.0-dkms-debian-0.0_git20240408.aa96a9f+dfsg-7.tar.gz"
+checksum=612660d9a3aa6e5f16d8a76f7ca4b6aff42f0df4d05c86c2b895586cc1ef16c7
 homepage="https://packages.debian.org/sid/ezurio-qcacld-2.0-dkms"
 license="nonfree"
 
