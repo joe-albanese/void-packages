@@ -50,6 +50,8 @@ mutable_files="
 export KBUILD_BUILD_TIMESTAMP=$(LC_ALL=C date -ud @${SOURCE_DATE_EPOCH:-0})
 export KBUILD_BUILD_USER=voidlinux
 export KBUILD_BUILD_HOST=voidlinux
+export CFLAGS="-O3 -march=armv8-a -mtune=cortex-a53"
+export CXXFLAGS="-O3 -march=armv8-a -mtune=cortex-a53"
 
 if [ "$CROSS_BUILD" ]; then
 	_cross="CROSS_COMPILE=${XBPS_CROSS_TRIPLET}-"
