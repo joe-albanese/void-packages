@@ -4,7 +4,7 @@ version=0.1
 revision=1
 archs="aarch64*"
 makedepends="uboot-mkimage"
-depends="dracut u-boot-menu"
+depends="base-system dracut u-boot-menu"
 short_desc="Void Linux MNT Pocket Reform imx8mp platform package"
 maintainer="Joseph Albanese <joe-albanese@protonmail.com>"
 license="Public Domain"
@@ -13,6 +13,11 @@ homepage="https://www.voidlinux.org"
 do_install() {
 	vinstall ${FILESDIR}/dracut-pocket-reform.conf 0644 usr/lib/dracut/dracut.conf.d 20-pocket-reform.conf
 	vinstall ${FILESDIR}/modprobe-pocket-reform.conf 0644 usr/lib/modprobe.d pocket-reform.conf
-	mkimage -A arm64 -O linux -T script -C none -a 0x0 -e 0x0 -n "boot script" -d ${FILESDIR}/boot.txt boot.scr
-	vinstall boot.scr 0644 boot
+	vmkdir boot/extlinux
+	touch extlinux.conf
+	vinstall extlinux.conf 0600 boot/extlinux
+	vinstall ${FILESDIR}/extlinux 0600 etc/default
+
+	#imkimage -A arm64 -O linux -T script -C none -a 0x0 -e 0x0 -n "boot script" -d ${FILESDIR}/boot.txt boot.scr
+	#vinstall boot.scr 0644 boot
 }
