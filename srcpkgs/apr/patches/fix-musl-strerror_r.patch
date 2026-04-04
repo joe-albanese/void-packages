@@ -1,0 +1,13 @@
+diff --git a/misc/unix/errorcodes.c b/misc/unix/errorcodes.c
+index 60ea2f7..60fa7d9 100644
+--- a/misc/unix/errorcodes.c
++++ b/misc/unix/errorcodes.c
+@@ -382,7 +382,7 @@ static char *native_strerror(apr_status_t statcode, char *buf,
+     const char *msg;
+ 
+     buf[0] = '\0';
+-    msg = strerror_r(statcode, buf, bufsize);
++    msg = (char*)strerror_r(statcode, buf, bufsize);
+     if (buf[0] == '\0') { /* libc didn't use our buffer */
+         return stuffbuffer(buf, bufsize, msg);
+     }
