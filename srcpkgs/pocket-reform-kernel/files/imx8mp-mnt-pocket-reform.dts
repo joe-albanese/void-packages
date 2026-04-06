@@ -811,7 +811,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	samsung,burst-clock-frequency = <972000000>;
-	samsung,esc-clock-frequency = <48000000>;
+	samsung,esc-clock-frequency = <24000000>;
 	status = "okay";
 
 	panel@0 {
@@ -825,6 +825,10 @@
 		// actually backlight enable
 		enable-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
 		burst-mode;
+    // the dsi mode for this controller while
+    // recognizing display v1 vs v2
+		probe-mode-lpm;
+		init-in-enable;
 
 		port {
 			panel_in: endpoint {
