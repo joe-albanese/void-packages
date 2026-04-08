@@ -10,10 +10,18 @@ depends="dkms zstd gcc make"
 dkms_modules="ezurio-qcacld-2.0 ${version}"
 #make_use_env=yes
 triggers="dkms initramfs-regenerate"
-distfiles="https://salsa.debian.org/debian/ezurio-qcacld-2.0-dkms/-/archive/debian/0.0_git20240408.aa96a9f+dfsg-7/ezurio-qcacld-2.0-dkms-debian-0.0_git20240408.aa96a9f+dfsg-7.tar.gz"
-checksum=612660d9a3aa6e5f16d8a76f7ca4b6aff42f0df4d05c86c2b895586cc1ef16c7
+distfiles="https://salsa.debian.org/debian/ezurio-qcacld-2.0-dkms/-/archive/debian/0.0_git20240408.aa96a9f+dfsg-8/ezurio-qcacld-2.0-dkms-debian-0.0_git20240408.aa96a9f+dfsg-8.tar.gz"
+checksum=c1624309f06256ba916fb733f8924b130d60dcbe4930d472523eb62e3157b56b
 homepage="https://packages.debian.org/sid/ezurio-qcacld-2.0-dkms"
 license="nonfree"
+
+post_extract() {
+	cat debian/patches/* | patch -sNp1 -F0
+}
+
+post_patch() {
+	vsed -i debian/ezurio-qcacld-2.0-dkms.dkms -e "s,#MODULE_VERSION#,${version},"
+}
 
 do_install() {
 	vmkdir usr/src/ezurio-qcacld-2.0-${version}
@@ -23,6 +31,6 @@ do_install() {
 	vcopy Makefile usr/src/ezurio-qcacld-2.0-${version}
 	vcopy firmware_bin usr/src/ezurio-qcacld-2.0-${version}
 	vcopy wcnss usr/src/ezurio-qcacld-2.0-${version}
-	vcopy ${FILESDIR}/dkms.conf usr/src/ezurio-qcacld-2.0-${version}
-	vlicense ${FILESDIR}/LICENSE.txt
+	vcopy debian/ezurio-qcacld-2.0-dkms.dkms usr/src/ezurio-qcacld-2.0-${version}/dkms.conf
+	vlicense debian/copyright
 }
