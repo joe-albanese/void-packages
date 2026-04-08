@@ -1,6 +1,6 @@
 # Template file for 'reform2-lpc-dkms'
 pkgname=reform2-lpc-dkms
-version=1.69
+version=1.86
 revision=1
 archs="aarch64 aarch64-musl"
 depends="dkms zstd clang make"
@@ -9,14 +9,18 @@ maintainer="Joe Albanese <joe@joe-albanese.com>"
 license="AGPL-3.0-or-later"
 homepage="https://source.mnt.re/reform/reform-tools"
 distfiles="https://source.mnt.re/reform/reform-tools/-/archive/${version}/reform-tools-${version}.tar.gz"
-checksum=80630150e7a20191d4d1457b93a057b3b454d04dfb37b25af674c56143302e3d
+checksum=d3f31279a652a1328736bf40f6a67cddb4b15debd3d66b4dd240448f3002b724
 triggers="dkms initramfs-regenerate"
 dkms_modules="reform2_lpc ${version}"
+
+pre_install() {
+	cp ${FILESDIR}/dkms.conf lpc
+	vsed -i lpc/dkms.conf -e "s,@VERSION@,${version},"
+}
 
 do_install() {
 	vmkdir usr/src/reform2_lpc-${version}
 	vcopy lpc/* usr/src/reform2_lpc-${version}
-	vcopy ${FILESDIR}/dkms.conf usr/src/reform2_lpc-${version}
 }
 
 post_install() {
