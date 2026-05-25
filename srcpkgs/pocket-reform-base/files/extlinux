@@ -1,6 +1,6 @@
 TIMEOUT=10
 # Defaults to current kernel cmdline if left empty
-CMDLINE=""
+CMDLINE="loglevel=3 ro no_console_suspend pci=pcie_bus_perf nvme_core.default_ps_max_latency_us=0 fbcon=rotate:3 console=tty1"
 # set this to use a DEVICETREEDIR line in place of an FDT line
 USE_DEVICETREEDIR=""
 # relative dtb path supplied to FDT line, as long as above is unset
